@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="koloboke.impl.jdk8" type="repository">
+    <properties maven-id="com.koloboke:koloboke-impl-jdk8:1.0.0" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/koloboke/koloboke-impl-jdk8/1.0.0/koloboke-impl-jdk8-1.0.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/koloboke/koloboke-impl-common-jdk8/1.0.0/koloboke-impl-common-jdk8-1.0.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/koloboke/koloboke-api-jdk8/1.0.0/koloboke-api-jdk8-1.0.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

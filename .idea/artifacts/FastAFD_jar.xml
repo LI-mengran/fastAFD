@@ -1,0 +1,19 @@
+<component name="ArtifactManager">
+  <artifact build-on-make="true" name="FastAFD:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/FastAFD_jar</output-path>
+    <root id="root">
+      <element id="archive" name="FastAFD.jar">
+        <element id="module-output" name="FastAFD" />
+      </element>
+      <element id="library" level="project" name="de.metanome.algorithm_integration" />
+      <element id="library" level="project" name="koloboke.api.jdk8" />
+      <element id="library" level="project" name="roaringbitmap.RoaringBitmap" />
+      <element id="library" level="project" name="koloboke.impl.jdk8" />
+      <element id="library" level="project" name="net.sourceforge.javacsv" />
+      <element id="library" level="project" name="koloboke.impl.common.jdk8" />
+      <element id="library" level="project" name="net.mintern.primitive" />
+      <element id="library" level="project" name="it.unimi.dsi.fastutil" />
+      <element id="library" level="project" name="info.picocli" />
+    </root>
+  </artifact>
+</component>
