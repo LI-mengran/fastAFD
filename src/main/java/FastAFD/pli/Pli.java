@@ -1,5 +1,6 @@
 package FastAFD.pli;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -40,17 +41,19 @@ public class Pli<T> {
     public <T> Integer getClusterIdByKey(T key) {
         return keyToClusterIdMap.get(key);
     }
-    public int getFirstIndexWhereKeyIsLTE(double target) {
+    public int getFirstIndexWhereKeyIsLTE(BigDecimal target) {
         if(keys.get(0) instanceof Double){
-            if ((Double) keys.get(0) >= target) return 0;
+            if ((Double) keys.get(0) >= target.doubleValue()) return 0;
         }
         else if(keys.get(0) instanceof Integer){
-                if((Integer) keys.get(0) >= target) return 0;
+                if((Integer) keys.get(0) >= target.intValue()) return 0;
             }
         else return -1;
         return getFirstIndexWhereKeyIsLTE(target, 0);
 
     }
+
+
     public int getFirstIndexWhereLengthIsLTE(int length){
         if(length <= 0)return 0;
         int l = 0;
@@ -63,7 +66,7 @@ public class Pli<T> {
         return l;
     }
 
-    public  Integer getFirstIndexWhereKeyIsLTE(double target, int l) {
+    public  Integer getFirstIndexWhereKeyIsLTE(BigDecimal target, int l) {
         Integer i = keyToClusterIdMap.get(target);
         if (i != null) return i;
 
@@ -71,11 +74,11 @@ public class Pli<T> {
         while (l < r) {
             int m = l + ((r - l) >>> 1);
             if(keys.get(m) instanceof Integer){
-                if ((Integer) keys.get(m) >= target) r = m;
+                if ((Integer) keys.get(m) >= target.intValue()) r = m;
                 else l = m + 1;
             }
             else if(keys.get(m) instanceof Double){
-                if ((Double) keys.get(m) >= target) r = m;
+                if ((Double) keys.get(m) >= target.doubleValue()) r = m;
                 else l = m + 1;
             }
 

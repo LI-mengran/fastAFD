@@ -64,7 +64,7 @@ public class Evidence {
     public void resetBitset(){
         this.bitSet = Utils.listToBitSet(indexByColumn, maxPredicateIndex);
     }
-    public int getCount(){
-        return (int) count;
+    public Long getCount(){
+        return count;
     }
 }

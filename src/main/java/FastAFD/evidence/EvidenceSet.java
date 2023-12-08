@@ -7,12 +7,12 @@ import java.util.List;
 
 public class EvidenceSet {
     List<Evidence> evidenceSet = new ArrayList<>();
-    HashMap<BitSet, Integer> evidenceNumber = new HashMap<>();
+    HashMap<BitSet, Long> evidenceNumber = new HashMap<>();
     public EvidenceSet (){
 
     }
 
-    public void addNewEvidence(Evidence evidence, int number){
+    public void addNewEvidence(Evidence evidence, long number){
         evidenceSet.add(evidence.copy());
         evidenceNumber.put(evidence.bitSet, number);
     }
@@ -21,7 +21,7 @@ public class EvidenceSet {
         return evidenceSet;
     }
 
-    public int getEvidenceNumber(Evidence evidence){
+    public long getEvidenceNumber(Evidence evidence){
         return evidenceNumber.get(evidence.bitSet);
     }
 
@@ -29,7 +29,7 @@ public class EvidenceSet {
         return evidenceNumber.containsKey(target.bitSet);
     }
     //may hash by context and not address
-    public void add(Evidence target, int number){
+    public void add(Evidence target, long number){
         evidenceNumber.put(target.bitSet, evidenceNumber.get(target.bitSet) + number);
     }
 

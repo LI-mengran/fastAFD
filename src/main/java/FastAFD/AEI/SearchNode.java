@@ -5,9 +5,7 @@ import java.util.List;
 
 public class SearchNode {
     int e;
-    int rightThresholdIndex;
     int columnIndex;
-    int remainCount;
     List<Long> remainCounts;
     List<AFDCandidate> candidates;
     List<AFDCandidate> unhitCand;
@@ -23,7 +21,7 @@ public class SearchNode {
        this.columnIndex = columnIndex;
     }
 
-    public Long sub(int rightTresholdIndex, int count){
+    public Long sub(int rightTresholdIndex, Long count){
         remainCounts.set(rightTresholdIndex, remainCounts.get(rightTresholdIndex) - count);
         return remainCounts.get(rightTresholdIndex);
     }

@@ -84,8 +84,11 @@ public class Input {
             } else if (c.getType() == Column.Type.DOUBLE) {
                 ParsedColumn<Double> pColumn = new ParsedColumn<>(c.getName(), Double.class, i, providerD);
                 pColumns.add(pColumn);
-                for (int l = 0; l < c.getLineCount(); ++l)
+                for (int l = 0; l < c.getLineCount(); ++l){
+                    pColumn.digit = Math.max(pColumn.digit, getDigit(c.getString(l)));
                     pColumn.addLine(c.getDouble(l));
+                }
+
             } else if (c.getType() == Column.Type.STRING) {
                 ParsedColumn<String> pColumn = new ParsedColumn<>(c.getName(), String.class, i, providerS);
                 pColumns.add(pColumn);
@@ -101,6 +104,10 @@ public class Input {
 
     public int getRowCount() {
         return rowCount;
+    }
+
+    public int getDigit(String s){
+        return s.split("\\.")[1].length();
     }
 
 

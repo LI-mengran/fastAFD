@@ -37,7 +37,7 @@ public class EvidenceTable {
     public Evidence getEvidence(){
         return evidence;
     }
-    public int getNumber(){
+    public long getNumber(){
         return table.getCardinality();
     }
 

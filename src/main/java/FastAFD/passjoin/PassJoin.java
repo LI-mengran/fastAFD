@@ -90,7 +90,7 @@ public class PassJoin {
     private HashMap<String, Integer> computeShortValues(String queryWord, List<SubstringableString> shortValues, int threshould, int startTupleId, Pli<String> pli){
         HashMap<String, Integer> shortResult = new HashMap<>();
         for(var shortValue : shortValues){
-            if(pli.getLastTupleIdByKey(shortValue.toString()) < startTupleId)continue;
+//            if(pli.getLastTupleIdByKey(shortValue.toString()) < startTupleId)continue;
             double distance = Utils.calculateEditDistance(queryWord, shortValue.toString());
             if(distance <= threshould)
                 shortResult.put(shortValue.toString(), (int) distance);

@@ -15,12 +15,17 @@ import com.sun.jdi.IntegerValue;
 import org.roaringbitmap.RoaringBitmap;
 
 import java.io.*;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static FastAFD.Utils.calculateEditDistance;
+import static java.lang.Thread.sleep;
 
 
 public class EvidenceSetBuilder {
@@ -199,6 +204,12 @@ public class EvidenceSetBuilder {
             rowSequence.add(i);
         }
 
+        List<Boolean> hasLongValues = new ArrayList<>();
+        for(ColumnStats columnStats : predicatesBuilder.getColumnStats()){
+            if(columnStats.getLongestLength() >= 230)
+                hasLongValues.add(true);
+            else hasLongValues.add(false);
+        }
 
         AtomicInteger progress = new AtomicInteger(0);
 //        rowSequence.parallelStream().forEachOrdered(row ->{
@@ -211,10 +222,11 @@ public class EvidenceSetBuilder {
             for (int columnIndex = 0; columnIndex < columnNumber; columnIndex++) {
                 if (numberColumnIndex.contains(columnIndex)) {
                     evidenceTables = updateNumberColumn(pColumns, evidenceTables, columnIndex, row + 1);
+//                    evidenceTables = updateNumberColumnWithoutPli(pColumns,evidenceTables,columnIndex,row + 1);
                 } else
 //                    evidenceTables = updateStringColumnWithPassJoin(pColumns, evidenceTables, columnIndex, row + 1);
 //                    evidenceTables = updateStringColumnWithoutPli(pColumns, evidenceTables, columnIndex,row + 1);
-                    evidenceTables = updateStringColumnWithPli(pColumns, evidenceTables, columnIndex,row + 1);
+                    evidenceTables = updateStringColumnWithPli(pColumns, evidenceTables, columnIndex,row + 1, hasLongValues.get(columnIndex));
 //                    evidenceTables = updateStringColumnWithPassJoinWithCache(pColumns,evidenceTables,columnIndex,row + 1);
             }
             //the evidenceSet this tuple have;
@@ -231,10 +243,10 @@ public class EvidenceSetBuilder {
 
 
             int currentProgress = progress.incrementAndGet();
-            if(currentProgress % 100 == 0){
-                double percentage = (double) currentProgress / (rowNumber - 1) * 100;
-                System.out.println("Progress: " + percentage + "%");
-            }
+//            if(currentProgress % 100 == 0){
+//                double percentage = (double) currentProgress / (rowNumber - 1) * 100;
+//                System.out.println("Progress: " + percentage + "%");
+//            }
 
 //        });
 
@@ -258,7 +270,7 @@ public class EvidenceSetBuilder {
                 if(pliBuilder.isLastTuple(columnIndex,(Integer) pColumns.get(columnIndex).getValue(startTupleId - 1),startTupleId - 1))
                     updateSetCache.remove(val);
             }
-            if(pColumns.get(columnIndex).getValue(startTupleId - 1) instanceof Double){
+            else if(pColumns.get(columnIndex).getValue(startTupleId - 1) instanceof Double){
                 if(pliBuilder.isLastTuple(columnIndex,val,startTupleId - 1))
                     updateSetCache.remove(val);
             }
@@ -269,26 +281,33 @@ public class EvidenceSetBuilder {
             updateSet.add(map);
         }
         Pli<?> pli = pliBuilder.getPlis().get(columnIndex);
-        int clusterId = pli.getFirstIndexWhereKeyIsLTE(val - demarcations.get((0)));
+        int digit = pColumns.get(columnIndex).getDigit();
+
+//        int clusterId = pli.getFirstIndexWhereKeyIsLTE(Double.parseDouble(df.format((val - demarcations.get((0))))));
+        int clusterId = pli.getFirstIndexWhereKeyIsLTE(new BigDecimal(val).subtract(BigDecimal.valueOf(demarcations.get(0))).setScale(digit, BigDecimal.ROUND_HALF_UP));
         while(clusterId < pli.size()){
-            double distance = Math.abs(val - getDoubleValue(pli.getKeys().get(clusterId)));
-            if(distance > demarcations.get(0))break;
+//            double distance = Math.abs(Double.parseDouble(df.format(val - getDoubleValue(pli.getKeys().get(clusterId)))));
+            BigDecimal distance = new BigDecimal(val).subtract(BigDecimal.valueOf(getDoubleValue(pli.getKeys().get(clusterId)))).abs().setScale(digit,BigDecimal.ROUND_HALF_UP);
+            if(distance.doubleValue() > demarcations.get(0))break;
             for(int stage = demarcations.size() - 1; stage >= 0; stage--) {
-                if (distance <= demarcations.get(stage)) {
-                    for(Integer index : pli.getCluster(clusterId).getRawCluster())
-                        updateSet.get((stage)).add(index);
+                if (distance.doubleValue() <= demarcations.get(stage)) {
+                    List<Integer> ids = pli.getCluster(clusterId).getRawCluster();
+                    for(int index = findNextTupleId(ids, startTupleId - 1); index < ids.size(); index++ )
+                        updateSet.get(stage).add(ids.get(index));
                     break;
                 }
             }
             clusterId++;
         }
-        List<Integer> thisClusterId = pliBuilder.getTuplesByKey(columnIndex, val) ;
-        if(thisClusterId == null)
-            thisClusterId = pliBuilder.getTuplesByKey(columnIndex,  (Integer) pColumns.get(columnIndex).getValue(startTupleId - 1) );
-        if(thisClusterId != null && thisClusterId.size() > 1){
-            for(Integer tupleIndex : thisClusterId){
-                updateSet.get(demarcations.size() - 1).add(tupleIndex);
-            }
+
+        List<Integer> thisCluster;
+        if(pColumns.get(columnIndex).getValue(startTupleId - 1) instanceof Double){
+            thisCluster = pliBuilder.getTuplesByKey(columnIndex, val);
+        }
+        else {
+            thisCluster = pliBuilder.getTuplesByKey(columnIndex,  (Integer) pColumns.get(columnIndex).getValue(startTupleId - 1) );
+        }
+        if(thisCluster != null && thisCluster.size() > 1){
             updateSetCache.add(val, updateSet);
         }
 
@@ -330,9 +349,9 @@ public class EvidenceSetBuilder {
                 val1 = (Double) pColumns.get(columnIndex).getValue(index) ;
             }
             else return null;
-            double distance = val - val1;
+            double distance = Math.abs(val - val1);
             for(int stage = demarcations.size() - 1; stage >= 0; stage--) {
-                if(distance < demarcations.get(stage)){
+                if(distance <= demarcations.get(stage)){
                     updateSet.get((stage)).add(index);
                     break;
                 }
@@ -594,7 +613,7 @@ public class EvidenceSetBuilder {
         String val = (String) pColumns.get(columnIndex).getValue(startTupleId - 1);
         for(int index = startTupleId; index < rowNumber; index++){
             String compareValue = (String) pColumns.get(columnIndex).getValue(index);
-            double distance = Utils.calculateEditDistance(val, (String) pColumns.get(columnIndex).getValue(index));
+            double distance = calculateEditDistance(val, (String) pColumns.get(columnIndex).getValue(index));
 //            double distance1 = Utils.calculateEditDistanceWithThreshold(new SubstringableString(val), 0,val.length(),new SubstringableString(compareValue),0,compareValue.length(),demarcations.get(0).intValue(), Utils.editDistanceBuffer);
 //            if(distance1 != distance){
 //                System.out.println(val + ':' + (String) pColumns.get(columnIndex).getValue(index) );
@@ -633,11 +652,12 @@ public class EvidenceSetBuilder {
         return newEvidenceTables;
     }
 
-    public List<EvidenceTable> updateStringColumnWithPli(List<ParsedColumn<?>> pColumns, List<EvidenceTable> evidenceTables, int columnIndex, int startTupleId){
+    public List<EvidenceTable> updateStringColumnWithPli(List<ParsedColumn<?>> pColumns, List<EvidenceTable> evidenceTables, int columnIndex, int startTupleId, boolean hasLongValue){
         int passJoinIndex = stringColumnIndex.indexOf(columnIndex);
         if(passJoinIndex == -1) {
             return null;
         }
+
         List<RoaringBitmap> updateSet = new ArrayList<>();
         List<Predicate> predicates = predicatesBuilder.getPredicatesByColumn(columnIndex);
         List<Double> demarcations = predicatesBuilder.getDemarcationsByColumn(columnIndex);
@@ -663,19 +683,41 @@ public class EvidenceSetBuilder {
 //                    double temp = Utils.calculateEditDistanceWithThreshold(new SubstringableString("Milwaukie"), 0,val.length(),new SubstringableString("Annapolis"),0,compareValue.length(),demarcations.get(0).intValue(), Utils.editDistanceBuffer);
 //                    Instant start = Instant.now();
 //                    double distance = getLevenshteinDistance(val,compareValue);
-                    double distance = Utils.calculateEditDistanceWithThreshold(new SubstringableString(val), 0,val.length(),new SubstringableString(compareValue),0,compareValue.length(),demarcations.get(0).intValue(), Utils.editDistanceBuffer);
-//                      double distance = Utils.calculateEditDistance(val,compareValue);
-//                    Duration duration = Duration.between(start, Instant.now());
-//                    computeTime += duration.toMillis();
-                    if(distance > demarcations.get(0).intValue())continue;
-//                    double distance = Utils.calculateEditDistance(val, compareValue,demarcations.get(0));
-//                    if((distance < demarcations.get(0) || distance1 < demarcations.get(0)) && distance1 != distance)
-//                        System.out.println(val + ':' + (String) pColumns.get(columnIndex).getValue(index) + ':' + distance + '|' + distance1 + "++++" + demarcations.get(0));
+
+                    //If the distance is always < max threshold then cant use it
+                    double distance;
+                    if(Math.abs(val.length() - compareValue.length()) > demarcations.get(0))
+                        distance = demarcations.get(0) + 1;
+                    else if(demarcations.get(0).intValue() >= val.length() && demarcations.get(0).intValue() >= compareValue.length()){
+                        distance = calculateEditDistance(val,compareValue);
+                    }
+                    else if(hasLongValue && val.length() >= 230 && val.length() == compareValue.length()){
+                        distance = calculateEditDistance(val,compareValue);
+                    }
+                    else{
+                        distance = Utils.calculateEditDistanceWithThreshold(new SubstringableString(val), 0,val.length(),new SubstringableString(compareValue),0,compareValue.length(),demarcations.get(0).intValue(), Utils.editDistanceBuffer);
+
+//                        double distance1 = calculateEditDistance(val,compareValue);
+//                        if(distance1 == 0 || distance == 0){
+//                            if(distance1 != 0 || distance !=0){
+//                                System.out.println(val.length() + ":" + compareValue.length());
+////                                System.out.println(val + ":" + compareValue + " ----" + distance1 + ":" + distance);
+//                            }
+//                        }
+                    }
+
+                    if(distance > demarcations.get(0).intValue()){
+                        continue;
+                    }
+//                    if(val.length() != compareValue.length())distance = 1;
+//                    else distance = calculateEditDistance(val,compareValue);
+
                     for(int stage = demarcations.size() - 1; stage >= 0; stage--){
                         if(distance <= demarcations.get(stage)){
                             updateSet.get((stage)).add(index);
                             break;
                         }
+
                     }
                 }
 
@@ -812,10 +854,10 @@ public class EvidenceSetBuilder {
             while ((line = br.readLine()) != null) {
                 String[] values = line.split(",");
                 List<Integer> integers = new ArrayList<>();
-                for (String value : values) {
-                    integers.add(Integer.parseInt(value));
+                for (int index = 0; index < values.length - 1; index++) {
+                    integers.add(Integer.parseInt(values[index]));
                 }
-                Evidence evidence = new Evidence(integers.subList(0, integers.size() - 1), integers.get(integers.size() - 1));
+                Evidence evidence = new Evidence(integers, Long.parseLong(values[values.length - 1]));
                 evidenceSet.add(evidence);
             }
         }  catch (IOException e) {
@@ -823,8 +865,28 @@ public class EvidenceSetBuilder {
         }
     }
 
-    public void indexOutput(){
-        String fileName = "evidencesIndex.txt";
+    public static int findNextTupleId(List<Integer> ids, int thisId) {
+        int left = 0;
+        int right = ids.size() - 1;
+        int result = 0;
+
+        while (left <= right) {
+            int mid = (right + left) / 2;
+            int currentId = ids.get(mid);
+
+            if (currentId >= thisId) {
+                result = mid;
+                right = mid - 1;
+            } else {
+                left = mid + 1;
+            }
+        }
+
+        return result;
+    }
+
+    public void indexOutput(String name){
+        String fileName = "evidencesIndex" + name + ".txt";
 
         try {
 

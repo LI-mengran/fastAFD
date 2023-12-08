@@ -16,6 +16,8 @@ public class ParsedColumn<T extends Comparable<T>> {
     private final List<T> values = new ArrayList<>();
     private final Class<T> type;
 
+    int digit;
+
     private final IndexProvider<T> indexProvider;
 
     public ParsedColumn(String columnName, Class<T> type, int index, IndexProvider<T> indexProvider) {
@@ -52,6 +54,7 @@ public class ParsedColumn<T extends Comparable<T>> {
         return type != String.class;
     }
 
+
     public int getIndexAt(int row) {
         return indexProvider.getIndex(values.get(row));
     }
@@ -74,6 +77,10 @@ public class ParsedColumn<T extends Comparable<T>> {
 
     public int getIndex() {
         return index;
+    }
+
+    public int getDigit() {
+        return digit;
     }
 
     public Class<T> getType() {

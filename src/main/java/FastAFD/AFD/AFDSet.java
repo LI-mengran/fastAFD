@@ -8,6 +8,7 @@ import java.util.*;
 public class AFDSet {
     List<List<AFD>> AFDs;
     int columnIndex;
+    List<AFD> minimalAFDs;
 
     public AFDSet(){
         AFDs = new ArrayList<>();
@@ -27,15 +28,18 @@ public class AFDSet {
 
     //a afd is minimal when the left is maximum and the right is minimum;
     public void add(AFD afd){
-//        for(int RIndex = afd.thresholdsIndexes.get(afd.columnIndex); RIndex < AFDs.size(); RIndex++){
-//            List<AFD> removedSet = new ArrayList<>();
-//            for(AFD fd : AFDs.get(RIndex)) {
-//                if(fd.thresholdsIndexes.get(columnIndex) > afd.thresholdsIndexes.get(columnIndex))continue;
-//                if(canCover(fd.thresholdsIndexes,afd.thresholdsIndexes)) removedSet.add(fd);
-//            }
-//                AFDs.get(RIndex).removeAll(removedSet);
-//        }
+        for(int RIndex = afd.thresholdsIndexes.get(afd.columnIndex); RIndex < AFDs.size(); RIndex++){
+            List<AFD> removedSet = new ArrayList<>();
+            for(AFD fd : AFDs.get(RIndex)) {
+                if(fd.thresholdsIndexes.get(columnIndex) > afd.thresholdsIndexes.get(columnIndex))continue;
+                if(canCover(fd.thresholdsIndexes,afd.thresholdsIndexes)) removedSet.add(fd);
+            }
+                AFDs.get(RIndex).removeAll(removedSet);
+        }
         AFDs.get(afd.thresholdsIndexes.get(columnIndex)).add(afd);
+        //printout
+//        if(AFDs.get(afd.thresholdsIndexes.get(columnIndex)).size() % 100 == 0)
+//            System.out.println(AFDs.get(afd.thresholdsIndexes.get(columnIndex)).size());
     }
 
     public boolean containsSubset(List<Integer> LIndexes, int RIndex){
@@ -84,7 +88,8 @@ public class AFDSet {
                 if(flag) results.add(afd);
             }
         }
-
+        AFDs = null;
+        minimalAFDs = results;
         return results;
     }
 
@@ -104,5 +109,8 @@ public class AFDSet {
         for(var afd: AFDs.get(0)){
             System.out.println(afd.toString());
         }
+    }
+    public int minimalCount(){
+        return minimalAFDs.size();
     }
 }

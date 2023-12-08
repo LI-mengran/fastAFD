@@ -28,27 +28,31 @@ import picocli.CommandLine.Option;
 public class Main implements Runnable{
 
     @Option(names = {"-f"}, description = "input file")
-    String fp = "./dataset/airport_clean.csv";
+    String fp = "./dataset/pcm.csv";
 
     @Option(names = {"-r"}, description = "rowLimit")
-    int rowLimit =-1;
+    int rowLimit = 1000;
+
+    @Option(names = {"-o"}, description = "output the index")
+    boolean indexOutput = false;
 
     @Option(names = {"-t"}, description = "threshold")
-    double threshold = 0.05;
+    double threshold = 0.01;
 //21:55 22:22
     @Option(names = {"-s"}, description = "column thresholds")
-    String columnThreshold = "./threshold/threshold1.txt";
+    String columnThreshold = "./threshold/diff.txt";
 //    String columnThreshold = "";
 
     @Option(names = {"-e"}, description = "evidences file")
-    String evidencesIndexesFile = "evidencesIndexAirportall.txt";
-//    String evidencesIndexesFile = "";
+//    String evidencesIndexesFile = "evidencesIndextax.csv.txt";
+    String evidencesIndexesFile = "";
     @Override
     public void run(){
         double maxThreshold = 0.5;
         int maxStage = 3;
-        // limit the number of tuples in dataset, -1 means no limit
-        boolean linear = false;         // linear single-thread in EvidenceSetBuilder
+        System.out.println("[File name] : " + fp);
+        System.out.println("[Threshold] : " + threshold);
+        System.out.println("[Index] : " + columnThreshold);
 
         ArrayList<ColumnStats> columnStats = new ArrayList<>();
 
@@ -81,7 +85,8 @@ public class Main implements Runnable{
             System.out.println(evidenceSetBuilder.getEvidenceSet().getEvidenceSet().size());
 //        evidenceSetBuilder.testPassjoin();
 //        evidenceSetBuilder.outPut();
-//        evidenceSetBuilder.indexOutput();
+            if(indexOutput)
+                evidenceSetBuilder.indexOutput(fp.split("/")[fp.split("/").length - 1]);
             duration = Duration.between(start, Instant.now());
             System.out.println("[EvidenceSet Building Time] : " + duration.toMillis() + "ms");
         }

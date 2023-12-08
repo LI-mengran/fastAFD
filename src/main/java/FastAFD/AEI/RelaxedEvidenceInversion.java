@@ -4,8 +4,12 @@ import FastAFD.AFD.AFD;
 import FastAFD.AFD.AFDSet;
 import FastAFD.evidence.Evidence;
 import FastAFD.evidence.EvidenceSet;
+import FastAFD.input.Input;
+import FastAFD.input.RelationalInput;
 import FastAFD.predicates.PredicatesBuilder;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -17,8 +21,11 @@ public class RelaxedEvidenceInversion {
     private EvidenceSet evidenceSet;
     private Evidence [] evidencesArray;
     //Attention that some rIndexes set may be empty
-    private List<Integer> intevalIds;
+    private List<Long> intevalIds;
     List<AFDSet> AFDSets = new ArrayList<>();
+    long miniTime;
+    long hitTime;
+    long walkTime;
 
     public RelaxedEvidenceInversion(PredicatesBuilder pBuilder, int rowNumber, EvidenceSet evidenceSet){
         this.columnNumber = pBuilder.getColumnNumber();
@@ -39,28 +46,38 @@ public class RelaxedEvidenceInversion {
             evidencesArray = flattenAndConvert(sortedEvidences);
             intevalIds = new ArrayList<>();
             for(int i = 0; i < maxIndexes.get(columnIndex) - 1; i++){
-                intevalIds.add(0);
+                intevalIds.add(0L);
             }
             for(var splitEvidences : sortedEvidences){
                 Collections.sort(splitEvidences, (o1, o2) -> Long.compare(o1.getCount(), o2.getCount()));
                 if(splitEvidences.size() == 0)continue;
-                intevalIds.set(splitEvidences.get(0).getPredicateIndex(columnIndex), splitEvidences.size());
+                intevalIds.set(splitEvidences.get(0).getPredicateIndex(columnIndex), (long) splitEvidences.size());
             }
             for(int i = 1; i < maxIndexes.get(columnIndex) - 1; i++){
                 intevalIds.set(i, intevalIds.get(i - 1) + intevalIds.get(i));
             }
+
             inverseEvidenceSet(targets,columnIndex);
+            Instant start = Instant.now();
+            AFDSets.get(columnIndex).minimize();
+            Duration duration = Duration.between(start, Instant.now());
+            miniTime += duration.toMillis();
+
+            //printout
+//            System.out.println("column " + columnIndex + " completed.");
         }
         AFDSet minimal = new AFDSet();
         int totalCount = 0;
         for(var afds : AFDSets){
-            List<AFD> Afds = afds.minimize();
 //            for(AFD afd : afds.minimize())
 //                minimal.directlyAdd(afd);
-            totalCount += Afds.size();
+            totalCount += afds.minimalCount();
 
         }
         System.out.println(totalCount);
+        System.out.println("miniteTime: " + miniTime);
+        System.out.println("hitTime: " + hitTime);
+        System.out.println("walkTime: " + walkTime);
         return minimal;
     }
 
@@ -85,9 +102,10 @@ public class RelaxedEvidenceInversion {
         for(var evidences : sortedEvidences){
             for(var evidence : evidences)
                 totalCount += evidence.getCount();
-            targets.add((long)(target + totalCount - tpCounts));
+            targets.add((target + totalCount - tpCounts));
 
         }
+//        System.out.println(targets.get(0) );
         return targets;
     }
 
@@ -119,11 +137,16 @@ public class RelaxedEvidenceInversion {
 
         while(!nodes.isEmpty()){
             SearchNode nd = nodes.pop();
-//            System.out.println(nd.e);
             if(nd.e >= evidencesArray.length)continue;
+            Instant start = Instant.now();
             hit(nd);
+            Duration duration = Duration.between(start, Instant.now());
+            hitTime += duration.toMillis();
+            start = Instant.now();
             if(! isNoUse(nd))
                 walk(nd.e + 1, nodes,nd.candidates,nd.limitThresholds,nd.remainCounts,columnIndex);
+            duration = Duration.between(start, Instant.now());
+            walkTime += duration.toMillis();
         }
     }
 
@@ -144,7 +167,6 @@ public class RelaxedEvidenceInversion {
                 nodes.add(node);
             }
 
-//            SearchNode node = new SearchNode()
             //unhit evidence
             if(unhitCand.isEmpty())return;
             getAnd(limitThresholds, evi.getPredicateIndex());
@@ -178,6 +200,7 @@ public class RelaxedEvidenceInversion {
             if(newCandidates.isEmpty())return;
             e++;
             AFDCandidates = newCandidates;
+
 
         }
         //
@@ -318,6 +341,7 @@ public class RelaxedEvidenceInversion {
     }
 
     boolean isApproxCover(int e, List<Integer> cand, int RIndex, long target, int columnIndex){
+
         if(target <= 0) return true;
         if(target == (long) rowNumber * rowNumber / 2) return false;
         for(; e < intevalIds.get(RIndex); e++){
