@@ -154,6 +154,12 @@ public class RelaxedEvidenceInversion {
         while (e < evidencesArray.length && !AFDCandidates.isEmpty()) {
             Evidence evi = evidencesArray[e];
             int RStage = evi.getPredicateIndex(columnIndex);
+            if(intevalIds.contains((long) e) && e > 0){
+                int lastRstage = evidencesArray[e - 1].getPredicateIndex(columnIndex);
+                    if(targets.get(lastRstage) > 0 && targets.get(lastRstage) != (long) rowNumber * rowNumber / 2)
+                        return;
+            }
+
 
             List<AFDCandidate> unhitCand = generateUnhitCand(e,AFDCandidates, columnIndex);
 
@@ -171,15 +177,7 @@ public class RelaxedEvidenceInversion {
             if(unhitCand.isEmpty())return;
             getAnd(limitThresholds, evi.getPredicateIndex());
             if(isEmpty(limitThresholds))return;
-
-            boolean canHit = false;
-            for(int rIndex = RStage; rIndex < maxIndexes.get(columnIndex) - 1; rIndex++){
-                    if(!isApproxCover(e + 1,evi.getPredicateIndex(),rIndex,targets.get(rIndex), columnIndex)){
-                        targets.set(rIndex, (long) rowNumber * rowNumber / 2);
-                    }
-                    else canHit = true;
-            }
-            if(!canHit)return;
+            if(!isApproxCover(e + 1,evi.getPredicateIndex(),RStage,targets.get(RStage), columnIndex))return;
 
             List<AFDCandidate> newCandidates = new ArrayList<>();
             for(AFDCandidate cand : unhitCand){
@@ -187,21 +185,21 @@ public class RelaxedEvidenceInversion {
                     newCandidates.add(cand);
                 }
                 else
-                    for(int RIndex = RStage; RIndex < maxIndexes.get(columnIndex) - 1; RIndex ++)
+                    for(int RIndex = RStage; RIndex < maxIndexes.get(columnIndex) - 1; RIndex ++){
                         if(!AFDSets.get(columnIndex).containsSubset(cand.leftThresholdsIndexes,columnIndex) && isApproxCover(e + 1,cand.leftThresholdsIndexes,RIndex,targets.get(RIndex),columnIndex)){
                             List<Integer> left = new ArrayList<>(cand.leftThresholdsIndexes);
                             left.set(columnIndex, RIndex);
                             AFD afd = new AFD(left, columnIndex);
                             AFDSets.get(columnIndex).add(afd);
                         }
+                    else break;
+                    }
             }
 
             if(isEmpty(limitThresholds))return;
             if(newCandidates.isEmpty())return;
             e++;
             AFDCandidates = newCandidates;
-
-
         }
         //
     }
@@ -263,7 +261,9 @@ public class RelaxedEvidenceInversion {
                                 AFD afd = new AFD(afdCand,nd.columnIndex);
                                 AFDSets.get(nd.columnIndex).add(afd);
                             }
+                            else break;
                         }
+                        else break;
                     }
                 }
             }

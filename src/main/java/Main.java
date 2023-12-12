@@ -44,7 +44,7 @@ public class Main implements Runnable{
 //    String columnThreshold = "";
 
     @Option(names = {"-e"}, description = "evidences file")
-//    String evidencesIndexesFile = "evidencesIndextax.csv.txt";
+//    String evidencesIndexesFile = "evidencesIndexpcm.txt";
     String evidencesIndexesFile = "";
     @Override
     public void run(){

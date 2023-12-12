@@ -886,7 +886,7 @@ public class EvidenceSetBuilder {
     }
 
     public void indexOutput(String name){
-        String fileName = "evidencesIndex" + name + ".txt";
+        String fileName = "evidencesIndex" + name;
 
         try {
 
