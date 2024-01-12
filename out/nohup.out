@@ -1,0 +1,122 @@
+[Reading Time] : 111ms
+[Pli Building Time] : 91ms
+[Predicates Building Time] : 2ms
+java.lang.StringIndexOutOfBoundsException: Range [0, 0 + -88) out of bounds for length 168
+	at java.base/jdk.internal.util.Preconditions$1.apply(Preconditions.java:55)
+	at java.base/jdk.internal.util.Preconditions$1.apply(Preconditions.java:52)
+	at java.base/jdk.internal.util.Preconditions$4.apply(Preconditions.java:213)
+	at java.base/jdk.internal.util.Preconditions$4.apply(Preconditions.java:210)
+	at java.base/jdk.internal.util.Preconditions.outOfBounds(Preconditions.java:98)
+	at java.base/jdk.internal.util.Preconditions.outOfBoundsCheckFromIndexSize(Preconditions.java:118)
+	at java.base/jdk.internal.util.Preconditions.checkFromIndexSize(Preconditions.java:397)
+	at java.base/java.lang.String.checkBoundsOffCount(String.java:4577)
+	at java.base/java.lang.String.rangeCheck(String.java:306)
+	at java.base/java.lang.String.<init>(String.java:302)
+	at FastAFD.passjoin.SubstringableString.toString(SubstringableString.java:63)
+	at FastAFD.Utils.calculateEditDistanceWithThreshold(Utils.java:158)
+	at FastAFD.evidence.EvidenceSetBuilder.updateStringColumnWithPli(EvidenceSetBuilder.java:679)
+	at FastAFD.evidence.EvidenceSetBuilder.buildEvidenceSet(EvidenceSetBuilder.java:222)
+	at Main.run(Main.java:78)
+	at picocli.CommandLine.executeUserObject(CommandLine.java:1939)
+	at picocli.CommandLine.access$1300(CommandLine.java:145)
+	at picocli.CommandLine$RunLast.executeUserObjectOfLastSubcommandWithSameParent(CommandLine.java:2352)
+	at picocli.CommandLine$RunLast.handle(CommandLine.java:2346)
+	at picocli.CommandLine$RunLast.handle(CommandLine.java:2311)
+	at picocli.CommandLine$AbstractParseResultHandler.execute(CommandLine.java:2179)
+	at picocli.CommandLine.execute(CommandLine.java:2078)
+	at Main.main(Main.java:104)
+[Reading Time] : 1339ms
+[Pli Building Time] : 735ms
+[Predicates Building Time] : 2ms
+51368
+数据已写入文件：evidencesIndexAdult.txt
+[EvidenceSet Building Time] : 4231891ms
+column 0 completed.
+column 1 completed.
+column 2 completed.
+column 3 completed.
+column 4 completed.
+column 5 completed.
+column 6 completed.
+column 7 completed.
+column 8 completed.
+column 9 completed.
+column 10 completed.
+column 11 completed.
+column 12 completed.
+544
+[EvidenceSet Inversion Time] : 50088ms
+[Reading Time] : 62ms
+[Pli Building Time] : 15ms
+[Predicates Building Time] : 1ms
+1278
+数据已写入文件：evidencesIndexAdult.txt
+[EvidenceSet Building Time] : 197ms
+column 0 completed.
+column 1 completed.
+column 2 completed.
+column 3 completed.
+column 4 completed.
+24
+[EvidenceSet Inversion Time] : 68ms
+
+
+[Reading Time] : 113ms
+[Pli Building Time] : 88ms
+[Predicates Building Time] : 2ms
+22130
+数据已写入文件：evidencesIndexAdult.txt
+[EvidenceSet Building Time] : 5236ms
+column 0 completed.
+column 1 completed.
+column 2 completed.
+column 3 completed.
+column 4 completed.
+column 5 completed.
+column 6 completed.
+column 7 completed.
+column 8 completed.
+column 9 completed.
+column 10 completed.
+column 11 completed.
+column 12 completed.
+column 13 completed.
+column 14 completed.
+column 15 completed.
+column 16 completed.
+266
+[EvidenceSet Inversion Time] : 6289ms
+[Reading Time] : 1337ms
+[Pli Building Time] : 775ms
+[Predicates Building Time] : 2ms
+51368
+数据已写入文件：evidencesIndexAdult.txt
+[EvidenceSet Building Time] : 4448530ms
+column 0 completed.
+column 1 completed.
+column 2 completed.
+column 3 completed.
+column 4 completed.
+column 5 completed.
+column 6 completed.
+column 7 completed.
+column 8 completed.
+column 9 completed.
+column 10 completed.
+column 11 completed.
+column 12 completed.
+544
+[EvidenceSet Inversion Time] : 50361ms
+[Reading Time] : 60ms
+[Pli Building Time] : 14ms
+[Predicates Building Time] : 1ms
+1278
+数据已写入文件：evidencesIndexAdult.txt
+[EvidenceSet Building Time] : 200ms
+column 0 completed.
+column 1 completed.
+column 2 completed.
+column 3 completed.
+column 4 completed.
+24
+[EvidenceSet Inversion Time] : 69ms

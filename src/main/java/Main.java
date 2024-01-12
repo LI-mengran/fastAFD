@@ -28,7 +28,7 @@ import picocli.CommandLine.Option;
 public class Main implements Runnable{
 
     @Option(names = {"-f"}, description = "input file")
-    String fp = "./dataset/pcm.csv";
+    String fp = "./dataset/tax.csv";
 
     @Option(names = {"-r"}, description = "rowLimit")
     int rowLimit = 1000;
@@ -36,16 +36,18 @@ public class Main implements Runnable{
     @Option(names = {"-o"}, description = "output the index")
     boolean indexOutput = false;
 
+    @Option(names = {"-g"}, description = "output the index")
+    boolean nog1Error = false;
     @Option(names = {"-t"}, description = "threshold")
     double threshold = 0.01;
 //21:55 22:22
     @Option(names = {"-s"}, description = "column thresholds")
-    String columnThreshold = "./threshold/diff.txt";
+    String columnThreshold = "./threshold/tax.txt";
 //    String columnThreshold = "";
 
     @Option(names = {"-e"}, description = "evidences file")
-//    String evidencesIndexesFile = "evidencesIndexpcm.txt";
-    String evidencesIndexesFile = "";
+    String evidencesIndexesFile = "evidencesIndexpcm.txt";
+//    String evidencesIndexesFile = "";
     @Override
     public void run(){
         double maxThreshold = 0.5;
@@ -100,7 +102,7 @@ public class Main implements Runnable{
         }
 
         start = Instant.now();
-        RelaxedEvidenceInversion relaxedEvidenceInversion = new RelaxedEvidenceInversion(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet());
+        RelaxedEvidenceInversion relaxedEvidenceInversion = new RelaxedEvidenceInversion(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),nog1Error);
         AFDSet afdSet = relaxedEvidenceInversion.buildAFD(threshold);
         afdSet.show();
         duration = Duration.between(start, Instant.now());

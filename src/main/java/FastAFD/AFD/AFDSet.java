@@ -49,7 +49,6 @@ public class AFDSet {
             total += LIndexes.get(i);
         }
         for(AFD afd : AFDs.get(RIndex)){
-            List<Integer> AIndexed = afd.thresholdsIndexes;
             if(afd.getTotalLIndexes() < total)continue;
             if(canCover(LIndexes, afd.thresholdsIndexes))return true;
         }
@@ -104,6 +103,7 @@ public class AFDSet {
         }
         return true;
     }
+
 
     public void show(){
         for(var afd: AFDs.get(0)){
