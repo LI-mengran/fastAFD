@@ -5,7 +5,6 @@ import java.util.List;
 
 public class AFDCandidate {
     List<Integer> leftThresholdsIndexes;
-    List<Integer> maxIndexes;
     int rColumnIndex;
 
     public AFDCandidate(List<Integer> leftThresholdsIndexes, int rColumnIndex){

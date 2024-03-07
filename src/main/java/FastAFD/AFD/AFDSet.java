@@ -12,10 +12,12 @@ public class AFDSet {
 
     public AFDSet(){
         AFDs = new ArrayList<>();
+        minimalAFDs = new ArrayList<>();
         AFDs.add(new ArrayList<>());
     }
     public AFDSet(int columnIndex, int maxRIndex){
         AFDs = new ArrayList<>();
+        minimalAFDs = new ArrayList<>();
         for(int i = 0; i < maxRIndex - 1; i++){
             AFDs.add(new ArrayList<>());
         }
@@ -23,19 +25,19 @@ public class AFDSet {
     }
 
     public void directlyAdd(AFD afd){
-        AFDs.get(0).add(afd);
+        minimalAFDs.add(afd);
     }
 
     //a afd is minimal when the left is maximum and the right is minimum;
     public void add(AFD afd){
-        for(int RIndex = afd.thresholdsIndexes.get(afd.columnIndex); RIndex < AFDs.size(); RIndex++){
-            List<AFD> removedSet = new ArrayList<>();
-            for(AFD fd : AFDs.get(RIndex)) {
-                if(fd.thresholdsIndexes.get(columnIndex) > afd.thresholdsIndexes.get(columnIndex))continue;
-                if(canCover(fd.thresholdsIndexes,afd.thresholdsIndexes)) removedSet.add(fd);
-            }
-                AFDs.get(RIndex).removeAll(removedSet);
-        }
+//        for(int RIndex = afd.thresholdsIndexes.get(afd.columnIndex); RIndex < AFDs.size(); RIndex++){
+//            List<AFD> removedSet = new ArrayList<>();
+//            for(AFD fd : AFDs.get(RIndex)) {
+//                if(fd.thresholdsIndexes.get(columnIndex) > afd.thresholdsIndexes.get(columnIndex))continue;
+//                if(canCover(fd.thresholdsIndexes,afd.thresholdsIndexes)) removedSet.add(fd);
+//            }
+//                AFDs.get(RIndex).removeAll(removedSet);
+//        }
         AFDs.get(afd.thresholdsIndexes.get(columnIndex)).add(afd);
         //printout
 //        if(AFDs.get(afd.thresholdsIndexes.get(columnIndex)).size() % 100 == 0)
@@ -112,5 +114,13 @@ public class AFDSet {
     }
     public int minimalCount(){
         return minimalAFDs.size();
+    }
+
+    public List<AFD> getMinimalAFDs() {
+        return minimalAFDs;
+    }
+
+    public List<List<AFD>> getAFDs() {
+        return AFDs;
     }
 }

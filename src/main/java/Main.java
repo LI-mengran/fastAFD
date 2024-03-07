@@ -1,4 +1,6 @@
+import FastAFD.AEI.REIwithTopK;
 import FastAFD.AEI.RelaxedEvidenceInversion;
+import FastAFD.AEI.TopKSet;
 import FastAFD.AFD.AFDSet;
 import FastAFD.Utils;
 import FastAFD.evidence.EvidenceSetBuilder;
@@ -46,7 +48,7 @@ public class Main implements Runnable{
 //    String columnThreshold = "";
 
     @Option(names = {"-e"}, description = "evidences file")
-    String evidencesIndexesFile = "evidencesIndexpcm.txt";
+    String evidencesIndexesFile = "evidencesIndexadult.csv";
 //    String evidencesIndexesFile = "";
     @Override
     public void run(){
@@ -102,9 +104,16 @@ public class Main implements Runnable{
         }
 
         start = Instant.now();
-        RelaxedEvidenceInversion relaxedEvidenceInversion = new RelaxedEvidenceInversion(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),nog1Error);
-        AFDSet afdSet = relaxedEvidenceInversion.buildAFD(threshold);
-        afdSet.show();
+//        RelaxedEvidenceInversion relaxedEvidenceInversion = new RelaxedEvidenceInversion(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),nog1Error);
+
+        REIwithTopK relaxedEvidenceInversion = new REIwithTopK(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),nog1Error,50);
+//
+        List<TopKSet> afdSet = relaxedEvidenceInversion.buildTopK(threshold);
+        predicatesBuilder.printTopK(afdSet,input.getParsedColumns());
+
+//        AFDSet afdset = relaxedEvidenceInversion.buildAFD(threshold);
+//        predicatesBuilder.printAFD(afdset, input.getParsedColumns());
+
         duration = Duration.between(start, Instant.now());
         System.out.println("[EvidenceSet Inversion Time] : " + duration.toMillis() + "ms");
 

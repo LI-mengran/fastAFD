@@ -3,6 +3,7 @@ package FastAFD.input;
 public class ColumnStats<T> {
     public boolean isNum;
     private Class<T> type;
+
     public int shortestLength;
     public int longestLength;
     public double minNumber;

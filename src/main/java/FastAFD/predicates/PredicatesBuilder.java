@@ -1,6 +1,10 @@
 package FastAFD.predicates;
 
+import FastAFD.AEI.TopKSet;
+import FastAFD.AFD.AFD;
+import FastAFD.AFD.AFDSet;
 import FastAFD.input.ColumnStats;
+import FastAFD.input.ParsedColumn;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -41,13 +45,13 @@ public class PredicatesBuilder {
         for(int columnIndex = 0; columnIndex < columnNumber; columnIndex++){
             ColumnStats columnstat = columnStats.get(columnIndex);
             if(columnstat.isNum){
-//                buildNumberColumn(columnstat);
-                buildNumberColumnTest(columnstat);
+                buildNumberColumn(columnstat);
+//                buildNumberColumnTest(columnstat);
 
             }
             else
-//                buildStringColumn(columnstat);
-                buildStringColumnTest(columnstat);
+                buildStringColumn(columnstat);
+//                buildStringColumnTest(columnstat);
         }
     }
 
@@ -117,10 +121,7 @@ public class PredicatesBuilder {
     }
 
     private void buildStringColumnTest(ColumnStats columnStat) throws IOException {
-//        int[][] vector = {{0,1},{0,1},{0,1},{0,1},{0, 3, 5},{0,1,3},{0,1,3},{0,5,11},{0, 1, 3},{0,3,11},{}};
         int[][] vector = {{0},{0},{0},{0},{0},{0},{0},{0},{0},{0},{0}};;
-//        int[][] vector = {{},{0,2,4},{0,2},{0,2,4},{},{0,4,8},{0,4,8},{0,1,3},{0,2},{0,2},{},{},{},{0,3,5},{0,2}};
-//        int[][] vector = {{0,2,4}, {0,2,4},{0,1},{0,2},{0,3,5},{0,2,4},{0,1},{0,2,4},{0,1},{0,1},{},{},{},{},{}};
         int[] dem = vector[columnStat.getColumnIndex()];
         List<Predicate> columnPredicate = new ArrayList<>();
         List<Double> demarcation = new ArrayList<>();
@@ -227,5 +228,49 @@ public class PredicatesBuilder {
 
     public int getColumnNumber() {
         return columnNumber;
+    }
+
+    public void printAFD(AFDSet afdSet,  List<ParsedColumn<?>> pColumns){
+            for(AFD afd : afdSet.getMinimalAFDs()){
+                List<Integer> pIndexes = afd.getThresholdsIndexes();
+                boolean flag = false;
+                for(int index = 0; index < pIndexes.size(); index++ ){
+                    if(index == afd.getColumnIndex())continue;
+                    if(pIndexes.get(index) == 0)continue;
+                    if(flag)System.out.print(", ");
+                    flag = true;
+                    System.out.print( '[' + pColumns.get(index).getColumnName() + "(<= " +
+                            allColumnPredicates.get(index).get(pIndexes.get(index)).getHigherBound() +")]");
+                }
+                System.out.print(" --> ");
+                System.out.print('[' + pColumns.get(afd.getColumnIndex()).getColumnName() + "(<=" +
+                        allColumnPredicates.get(afd.getColumnIndex()).get(pIndexes.get(afd.getColumnIndex()) + 1).getHigherBound() +")]");
+                System.out.print('\n');
+            }
+    }
+
+    public void printTopK(List<TopKSet> topKSets, List<ParsedColumn<?>> pColumns){
+        for(TopKSet topKSet : topKSets){
+            for(double utility : topKSet.getTopKSet()){
+                for(AFD afd : topKSet.getUtility2AFD(utility)){
+                    List<Integer> pIndexes = afd.getThresholdsIndexes();
+                    boolean flag = false;
+                    for(int index = 0; index < pIndexes.size(); index++ ){
+                        if(index == afd.getColumnIndex())continue;
+                        if(pIndexes.get(index) == 0)continue;
+                        if(flag)System.out.print(", ");
+                        flag = true;
+                        System.out.print( '[' + pColumns.get(index).getColumnName() + "(<=" +
+                                allColumnPredicates.get(index).get(pIndexes.get(index)).getHigherBound() +")]");
+                    }
+                    System.out.print(" --> ");
+                    System.out.print('[' + pColumns.get(afd.getColumnIndex()).getColumnName() + "(<=" +
+                            allColumnPredicates.get(afd.getColumnIndex()).get(pIndexes.get(afd.getColumnIndex()) + 1).getHigherBound() +")]");
+                    System.out.print("  utility: " + utility);
+                    System.out.print('\n');
+                }
+            }
+        }
+
     }
 }

@@ -684,7 +684,7 @@ public class EvidenceSetBuilder {
 //                    Instant start = Instant.now();
 //                    double distance = getLevenshteinDistance(val,compareValue);
 
-                    //If the distance is always < max threshold then cant use it
+                    //If the distance is always < max threshold then can't use it
                     double distance;
                     if(Math.abs(val.length() - compareValue.length()) > demarcations.get(0))
                         distance = demarcations.get(0) + 1;

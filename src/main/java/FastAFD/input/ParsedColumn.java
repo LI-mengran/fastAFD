@@ -21,7 +21,7 @@ public class ParsedColumn<T extends Comparable<T>> {
     private final IndexProvider<T> indexProvider;
 
     public ParsedColumn(String columnName, Class<T> type, int index, IndexProvider<T> indexProvider) {
-        this.columnName = columnName;
+        this.columnName = columnName.split("\\(")[0];
         this.type = type;
         this.index = index;
         this.indexProvider = indexProvider;

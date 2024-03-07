@@ -10,9 +10,6 @@ public class Predicate {
         this.columnIndex = columnIndex;
     }
 
-    public double getHigherBount() {
-        return higherBound;
-    }
 
     public double getLowerBound() {
         return lowerBound;

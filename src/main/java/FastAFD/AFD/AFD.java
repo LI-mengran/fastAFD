@@ -20,4 +20,15 @@ public class AFD {
         return total;
     }
 
+    public int getRIndex(){
+        return thresholdsIndexes.get(columnIndex);
+    }
+
+    public List<Integer> getThresholdsIndexes() {
+        return thresholdsIndexes;
+    }
+
+    public Integer getColumnIndex() {
+        return columnIndex;
+    }
 }
