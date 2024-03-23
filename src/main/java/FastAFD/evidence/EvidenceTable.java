@@ -20,6 +20,10 @@ public class EvidenceTable {
     public EvidenceTable copy(){
         return new EvidenceTable(table.clone(), evidence.copy());
     }
+
+    public EvidenceTable copy(RoaringBitmap table){
+        return new EvidenceTable(table, evidence.copy());
+    }
     public void removeIds(int startId, int endId){
         this.table.remove(startId, endId + 1);
     }

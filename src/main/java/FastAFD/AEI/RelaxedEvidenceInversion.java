@@ -21,6 +21,7 @@ public class RelaxedEvidenceInversion {
     private Evidence [] evidencesArray;
     //Attention that some rIndexes set may be empty
     List<List<RoaringBitmap>> prefixEviSet = new ArrayList<>();
+
     private List<Long> intevalIds;
     List<AFDSet> AFDSets = new ArrayList<>();
     List<TopKSet> topKSets = new ArrayList<>();
@@ -170,13 +171,13 @@ public class RelaxedEvidenceInversion {
     public List<Long> generateTargets(List<List<Evidence>> sortedEvidences, double threshold){
         List<Long> targets = new ArrayList<>();
         long tpCounts = (long) rowNumber * (rowNumber - 1) / 2;
-        long target = tpCounts -  (long) Math.floor(((double) tpCounts * threshold));
+        long target = -  (long) Math.floor(((double) tpCounts * threshold));
 //        System.out.println("need to satisfied:" + (tpCounts - target));
         long totalCount = 0;
         for(var evidences : sortedEvidences){
             for(var evidence : evidences)
                 totalCount += evidence.getCount();
-            targets.add((target + totalCount - tpCounts));
+            targets.add((target + totalCount ));
 
         }
 //        System.out.println(targets.get(0) );
@@ -234,6 +235,9 @@ public class RelaxedEvidenceInversion {
                         return;
             }
 
+            if(targets.get(targets.size() - 1)  < 0 || targets.get(targets.size() - 1) ==  (long) rowNumber * rowNumber / 2)
+                return;
+
 
             List<AFDCandidate> unhitCand = generateUnhitCand(e,AFDCandidates);
 
@@ -255,26 +259,31 @@ public class RelaxedEvidenceInversion {
             if(unhitCand.isEmpty())return;
             getAnd(limitThresholds, evi.getPredicateIndex());
             if(isEmpty(limitThresholds))return;
-            if(!isApproxCover(e + 1,evi.getPredicateIndex(),RStage,targets.get(RStage),columnIndex))return;
+            if(!isApproxCover(e + 1,limitThresholds,RStage,targets.get(RStage),columnIndex))return;
 
             List<AFDCandidate> newCandidates = new ArrayList<>();
+
             for(AFDCandidate cand : unhitCand){
-                if(!isOutOfLimit(cand.leftThresholdsIndexes, limitThresholds, columnIndex)){
-                    newCandidates.add(cand);
+                if(isRunOutSearchSpace(cand.leftThresholdsIndexes, limitThresholds, columnIndex)){
+                    for(int RIndex = RStage; RIndex < maxIndexes.get(columnIndex) - 1; RIndex ++){
+                        if(!AFDSets.get(columnIndex).containsSubset(cand.leftThresholdsIndexes, RIndex) ){
+                            if(isApproxCover(e + 1,cand.leftThresholdsIndexes,RIndex,targets.get(RIndex),columnIndex)){
+                                List<Integer> left = new ArrayList<>(cand.leftThresholdsIndexes);
+                                left.set(columnIndex, RIndex);
+                                AFD afd = new AFD(left, columnIndex);
+                                AFDSets.get(columnIndex).add(afd);
+                            }
+                            else break;
+                        }
+                    }
                 }
                 else
-                    for(int RIndex = RStage; RIndex < maxIndexes.get(columnIndex) - 1; RIndex ++){
-                        if(!AFDSets.get(columnIndex).containsSubset(cand.leftThresholdsIndexes,columnIndex) && isApproxCover(e + 1,cand.leftThresholdsIndexes,RIndex,targets.get(RIndex),columnIndex)){
-                            List<Integer> left = new ArrayList<>(cand.leftThresholdsIndexes);
-                            left.set(columnIndex, RIndex);
-                            AFD afd = new AFD(left, columnIndex);
-                            AFDSets.get(columnIndex).add(afd);
-                        }
-                    else break;
-                    }
+                    newCandidates.add(cand);
+//                System.out.println("look a look");
+//                System.out.println(limitThresholds);
+//                System.out.println(cand.leftThresholdsIndexes);
             }
 
-            if(isEmpty(limitThresholds))return;
             if(newCandidates.isEmpty())return;
             e++;
             AFDCandidates = newCandidates;
@@ -308,6 +317,7 @@ public class RelaxedEvidenceInversion {
                     AFD afd = new AFD(left, nd.columnIndex);
                     AFDSets.get(nd.columnIndex).add((afd));
                 }
+                nd.remainCounts.set(rightThresholdIndex, (long) rowNumber * rowNumber / 2);
             }
             if(nog1Error)return;
         }
@@ -326,13 +336,12 @@ public class RelaxedEvidenceInversion {
                             AFD afd = new AFD(afdCand,nd.columnIndex);
                             AFDSets.get(nd.columnIndex).add(afd);
                         }
-                        nd.remainCounts.set(rightThresholdIndex, (long) rowNumber * rowNumber / 2);
                     }
                     for(int rightThresholdIndex : unCover) {
                         List<Integer> afdCand = new ArrayList<>(invalid.leftThresholdsIndexes);
                         afdCand.set(i, left.get(i) + 1);
                         if(!listCanCover( afdCand, candidates,nd.columnIndex) && !AFDSets.get(nd.columnIndex).containsSubset(afdCand,rightThresholdIndex)){
-                            if(!isEmpty(afdCand)){
+                            if(!isRunOutSearchSpace(afdCand, nd.limitThresholds, nd.columnIndex)){
                                 candidates.add(new AFDCandidate(afdCand, nd.columnIndex));
                                 break;
                             }
@@ -343,7 +352,6 @@ public class RelaxedEvidenceInversion {
                             }
                             else break;
                         }
-                        else break;
                     }
                 }
             }
@@ -380,10 +388,22 @@ public class RelaxedEvidenceInversion {
     boolean isOutOfLimit(List<Integer> indexes, List<Integer> limitThresholds, int columnIndex){
         for(int i = 0; i < columnNumber; i++){
             if(i == columnIndex)continue;
-            if(indexes.get(i) <= limitThresholds.get(i))
+            if(indexes.get(i) < limitThresholds.get(i) - 1)
                 return false;
         }
         return true;
+    }
+
+    boolean isRunOutSearchSpace(List<Integer> indexes, List<Integer> limitThresholds, int columnIndex){
+        boolean pFlag = true;
+        for(int index = 0; index < columnNumber; index++){
+            if(index == columnIndex) continue;
+            if(indexes.get(index) != limitThresholds.get(index) - 1){
+                pFlag = false;
+                break;
+            }
+        }
+        return pFlag;
     }
 
     boolean canCover(List<Integer> target, List<Integer> currentIdx, int columnIndex){
@@ -437,7 +457,7 @@ public class RelaxedEvidenceInversion {
 
     public boolean isEmpty(List<Integer> indexes){
         for (Integer index : indexes) {
-            if (index != 0) return false;
+            if (index != 1) return false;
         }
         return true;
 //        return false;
@@ -488,20 +508,6 @@ public class RelaxedEvidenceInversion {
     }
 
     double getUtility2( List<Integer> curIdx, int Rindex, int columnIndex){
-//        long support = 0;
-//        for(int i = 0; i < evidenceSet.getEvidenceSet().size(); i++){
-//            Evidence evi = evidenceSet.getEvidenceSet().get(i);
-//            boolean flag = true;
-//            List<Integer> targetIdx = evi.getPredicateIndex();
-//            for(int j = 0; j < columnNumber; j++){
-//                if(j == columnIndex)continue;
-//                if(targetIdx.get(j) < curIdx.get(j)) {
-//                    flag = false;
-//                    break;
-//                }
-//            }
-//            if(flag) support += evi.getCount();
-//        }
 
         long support = 0;
         RoaringBitmap mp = new RoaringBitmap();

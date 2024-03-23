@@ -38,7 +38,7 @@ public class Main implements Runnable{
     @Option(names = {"-o"}, description = "output the index")
     boolean indexOutput = false;
 
-    @Option(names = {"-g"}, description = "output the index")
+    @Option(names = {"-g"}, description = "without g1 error")
     boolean nog1Error = false;
     @Option(names = {"-t"}, description = "threshold")
     double threshold = 0.01;
@@ -48,8 +48,8 @@ public class Main implements Runnable{
 //    String columnThreshold = "";
 
     @Option(names = {"-e"}, description = "evidences file")
-    String evidencesIndexesFile = "evidencesIndexadult.csv";
-//    String evidencesIndexesFile = "";
+//    String evidencesIndexesFile = "evidencesIndexadult.csv";
+    String evidencesIndexesFile = "";
     @Override
     public void run(){
         double maxThreshold = 0.5;
@@ -104,15 +104,15 @@ public class Main implements Runnable{
         }
 
         start = Instant.now();
-//        RelaxedEvidenceInversion relaxedEvidenceInversion = new RelaxedEvidenceInversion(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),nog1Error);
+        RelaxedEvidenceInversion relaxedEvidenceInversion = new RelaxedEvidenceInversion(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),nog1Error);
 
-        REIwithTopK relaxedEvidenceInversion = new REIwithTopK(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),nog1Error,50);
-//
-        List<TopKSet> afdSet = relaxedEvidenceInversion.buildTopK(threshold);
-        predicatesBuilder.printTopK(afdSet,input.getParsedColumns());
+//        REIwithTopK relaxedEvidenceInversion = new REIwithTopK(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),nog1Error,50);
 
-//        AFDSet afdset = relaxedEvidenceInversion.buildAFD(threshold);
-//        predicatesBuilder.printAFD(afdset, input.getParsedColumns());
+//        List<TopKSet> afdSet = relaxedEvidenceInversion.buildTopK(threshold);
+//        predicatesBuilder.printTopK(afdSet,input.getParsedColumns());
+
+        AFDSet afdset = relaxedEvidenceInversion.buildAFD(threshold);
+        predicatesBuilder.printAFD(afdset, input.getParsedColumns());
 
         duration = Duration.between(start, Instant.now());
         System.out.println("[EvidenceSet Inversion Time] : " + duration.toMillis() + "ms");

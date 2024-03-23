@@ -319,9 +319,8 @@ public class EvidenceSetBuilder {
                 RoaringBitmap table = evidenceTable.table.clone();
                 table.and(updateSet.get(predicateIndex - 1));
                 if(table.isEmpty())continue;
-                EvidenceTable newEvidenceTable = evidenceTable.copy();
+                EvidenceTable newEvidenceTable = evidenceTable.copy(table);
                 evidenceTable.remove(updateSet.get(predicateIndex - 1));
-                newEvidenceTable.and(updateSet.get(predicateIndex - 1));
                 newEvidenceTable.updateEvidence(columnIndex, predicates.get(predicateIndex), predicateIndex);
                 newEvidenceTables.add(newEvidenceTable);
             }
@@ -368,9 +367,8 @@ public class EvidenceSetBuilder {
                 RoaringBitmap table = evidenceTable.table.clone();
                 table.and(updateSet.get(predicateIndex - 1));
                 if(table.isEmpty())continue;
-                EvidenceTable newEvidenceTable = evidenceTable.copy();
+                EvidenceTable newEvidenceTable = evidenceTable.copy(table);
                 evidenceTable.remove(updateSet.get(predicateIndex - 1));
-                newEvidenceTable.and(updateSet.get(predicateIndex - 1));
                 newEvidenceTable.updateEvidence(columnIndex, predicates.get(predicateIndex), predicateIndex);
                 newEvidenceTables.add(newEvidenceTable);
             }
@@ -462,9 +460,8 @@ public class EvidenceSetBuilder {
                 RoaringBitmap table = evidenceTable.table.clone();
                 table.and(updateSet.get(predicateIndex - 1));
                 if(table.isEmpty())continue;
-                EvidenceTable newEvidenceTable = evidenceTable.copy();
+                EvidenceTable newEvidenceTable = evidenceTable.copy(table);
                 evidenceTable.remove(updateSet.get(predicateIndex - 1));
-                newEvidenceTable.and(updateSet.get(predicateIndex - 1));
                 newEvidenceTable.updateEvidence(columnIndex, predicates.get(predicateIndex),predicateIndex);
                 newEvidenceTables.add(newEvidenceTable);
             }
@@ -588,9 +585,8 @@ public class EvidenceSetBuilder {
                 RoaringBitmap table = evidenceTable.table.clone();
                 table.and(updateSet.get(predicateIndex - 1));
                 if(table.isEmpty())continue;
-                EvidenceTable newEvidenceTable = evidenceTable.copy();
+                EvidenceTable newEvidenceTable = evidenceTable.copy(table);
                 evidenceTable.remove(updateSet.get(predicateIndex - 1));
-                newEvidenceTable.and(updateSet.get(predicateIndex - 1));
                 newEvidenceTable.updateEvidence(columnIndex, predicates.get(predicateIndex),predicateIndex);
                 newEvidenceTables.add(newEvidenceTable);
             }
@@ -639,9 +635,8 @@ public class EvidenceSetBuilder {
                 RoaringBitmap table = evidenceTable.table.clone();
                 table.and(updateSet.get(predicateIndex - 1));
                 if(table.isEmpty())continue;
-                EvidenceTable newEvidenceTable = evidenceTable.copy();
+                EvidenceTable newEvidenceTable = evidenceTable.copy(table);
                 evidenceTable.remove(updateSet.get(predicateIndex - 1));
-                newEvidenceTable.and(updateSet.get(predicateIndex - 1));
                 newEvidenceTable.updateEvidence(columnIndex, predicates.get(predicateIndex),predicateIndex);
                 newEvidenceTables.add(newEvidenceTable);
             }
@@ -674,7 +669,11 @@ public class EvidenceSetBuilder {
         }
         else{
             if(demarcations.size() != 0)
+            {
+                RoaringBitmap unComputed = new RoaringBitmap();
+                unComputed.add(startTupleId, rowNumber);
                 for(int index = startTupleId; index < rowNumber; index++){
+                    if(!unComputed.contains(index))continue;
                     String compareValue = (String) pColumns.get(columnIndex).getValue(index);
 //                    if(Math.abs(compareValue.length() - val.length()) > demarcations.get(0))
 //                        continue;
@@ -712,14 +711,18 @@ public class EvidenceSetBuilder {
 //                    if(val.length() != compareValue.length())distance = 1;
 //                    else distance = calculateEditDistance(val,compareValue);
 
-                    for(int stage = demarcations.size() - 1; stage >= 0; stage--){
-                        if(distance <= demarcations.get(stage)){
-                            updateSet.get((stage)).add(index);
-                            break;
+                        for(int stage = demarcations.size() - 1; stage >= 0; stage--){
+                            if(distance <= demarcations.get(stage)){
+                                for(Integer index1 : pliBuilder.getTuplesByKey(columnIndex, compareValue)){
+                                    updateSet.get((stage)).add(index1);
+                                    unComputed.remove(index1);
+                                }
+                                break;
+                            }
                         }
-
-                    }
                 }
+            }
+
 
 
 
@@ -767,9 +770,8 @@ public class EvidenceSetBuilder {
                 RoaringBitmap table = evidenceTable.table.clone();
                 table.and(updateSet.get(predicateIndex - 1));
                 if(table.isEmpty())continue;
-                EvidenceTable newEvidenceTable = evidenceTable.copy();
+                EvidenceTable newEvidenceTable = evidenceTable.copy(table);
                 evidenceTable.remove(updateSet.get(predicateIndex - 1));
-                newEvidenceTable.and(updateSet.get(predicateIndex - 1));
                 newEvidenceTable.updateEvidence(columnIndex, predicates.get(predicateIndex),predicateIndex);
                 newEvidenceTables.add(newEvidenceTable);
             }

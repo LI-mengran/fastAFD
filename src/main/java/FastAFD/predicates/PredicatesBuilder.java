@@ -174,7 +174,7 @@ public class PredicatesBuilder {
                         columnPredicate.add(new Predicate(dem.get(index - 1),dem.get(index), columnIndex));
                         demarcation.add( dem.get(index - 1));
                     }
-                    columnPredicate.add(new Predicate(0, 0, columnIndex));
+                    columnPredicate.add(new Predicate(0, dem.get(0), columnIndex));
                     basedPredicates.add(columnPredicate.get(0));
                     allColumnPredicates.add(columnPredicate);
                     allColumnDemarcations.add(demarcation);
