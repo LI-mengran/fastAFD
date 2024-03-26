@@ -16,6 +16,7 @@ public class RelaxedEvidenceInversion {
     private final int columnNumber;
     private final int evidenceNumber;
     private int rowNumber;
+    private int topKk = 1000;
     private List<Integer> maxIndexes;
     private EvidenceSet evidenceSet;
     private Evidence [] evidencesArray;
@@ -125,12 +126,18 @@ public class RelaxedEvidenceInversion {
             inverseEvidenceSet(targets,columnIndex);
             buildPrefixEviSet();
             Instant start = Instant.now();
-                TopKSet topKSet = new TopKSet(50, columnIndex);
+//            AFDSets.get(columnIndex).minimize();
+                TopKSet topKSet = new TopKSet(topKk, columnIndex);
                 for(var afds : AFDSets.get(columnIndex).getAFDs()){
                     for(var afd : afds){
-                        topKSet.insert(afd,getUtility2(afd.getThresholdsIndexes(),afd.getRIndex(),columnIndex));
+                        if(!topKSet.containsSubset(afd.getThresholdsIndexes(), afd.getRIndex()))
+                            topKSet.insert(afd,getUtility2(afd.getThresholdsIndexes(),afd.getRIndex(),columnIndex));
                     }
+
                 }
+//            for(var afd : AFDSets.get(columnIndex).getMinimalAFDs()){
+//                    topKSet.insert(afd,getUtility2(afd.getThresholdsIndexes(),afd.getRIndex(),columnIndex));
+//            }
                 topKSets.add(topKSet);
 
             Duration duration = Duration.between(start, Instant.now());
@@ -279,9 +286,6 @@ public class RelaxedEvidenceInversion {
                 }
                 else
                     newCandidates.add(cand);
-//                System.out.println("look a look");
-//                System.out.println(limitThresholds);
-//                System.out.println(cand.leftThresholdsIndexes);
             }
 
             if(newCandidates.isEmpty())return;

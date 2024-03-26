@@ -292,8 +292,11 @@ public class EvidenceSetBuilder {
             for(int stage = demarcations.size() - 1; stage >= 0; stage--) {
                 if (distance.doubleValue() <= demarcations.get(stage)) {
                     List<Integer> ids = pli.getCluster(clusterId).getRawCluster();
-                    for(int index = findNextTupleId(ids, startTupleId - 1); index < ids.size(); index++ )
-                        updateSet.get(stage).add(ids.get(index));
+//                    for(int index = findNextTupleId(ids, startTupleId - 1); index < ids.size(); index++ )
+//                        updateSet.get(stage).add(ids.get(index));
+
+                    for(Integer index : ids)
+                        updateSet.get(stage).add(index);
                     break;
                 }
             }
@@ -648,15 +651,16 @@ public class EvidenceSetBuilder {
     }
 
     public List<EvidenceTable> updateStringColumnWithPli(List<ParsedColumn<?>> pColumns, List<EvidenceTable> evidenceTables, int columnIndex, int startTupleId, boolean hasLongValue){
-        int passJoinIndex = stringColumnIndex.indexOf(columnIndex);
-        if(passJoinIndex == -1) {
-            return null;
-        }
+//        int passJoinIndex = stringColumnIndex.indexOf(columnIndex);
+//        if(passJoinIndex == -1) {
+//            return null;
+//        }
 
         List<RoaringBitmap> updateSet = new ArrayList<>();
         List<Predicate> predicates = predicatesBuilder.getPredicatesByColumn(columnIndex);
         List<Double> demarcations = predicatesBuilder.getDemarcationsByColumn(columnIndex);
         UpdateSetCache<String> updateSetCache = updateSetCaches.get(columnIndex);
+//        Pli<?> pli = pliBuilder.getPlis().get(columnIndex);
         for(int index = 0; index < demarcations.size(); index++){
             RoaringBitmap map = new RoaringBitmap();
             updateSet.add(map);
@@ -713,6 +717,10 @@ public class EvidenceSetBuilder {
 
                         for(int stage = demarcations.size() - 1; stage >= 0; stage--){
                             if(distance <= demarcations.get(stage)){
+//                                List<Integer> ids = pliBuilder.getTuplesByKey(columnIndex, compareValue);
+//                                for(int index1 = findNextTupleId(ids, index - 1); index1 < ids.size(); index1++ ){
+//                                    updateSet.get((stage)).add(ids.get(index1));
+//                                }
                                 for(Integer index1 : pliBuilder.getTuplesByKey(columnIndex, compareValue)){
                                     updateSet.get((stage)).add(index1);
                                     unComputed.remove(index1);
