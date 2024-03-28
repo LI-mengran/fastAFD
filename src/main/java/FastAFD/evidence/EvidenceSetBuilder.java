@@ -676,6 +676,11 @@ public class EvidenceSetBuilder {
             {
                 RoaringBitmap unComputed = new RoaringBitmap();
                 unComputed.add(startTupleId, rowNumber);
+                for(Integer index :pliBuilder.getTuplesByKey(columnIndex, val)){
+                    updateSet.get(demarcations.size() - 1).add(index);
+                    unComputed.remove(index);
+                }
+
                 for(int index = startTupleId; index < rowNumber; index++){
                     if(!unComputed.contains(index))continue;
                     String compareValue = (String) pColumns.get(columnIndex).getValue(index);
@@ -722,7 +727,7 @@ public class EvidenceSetBuilder {
 //                                    updateSet.get((stage)).add(ids.get(index1));
 //                                }
                                 for(Integer index1 : pliBuilder.getTuplesByKey(columnIndex, compareValue)){
-                                    updateSet.get((stage)).add(index1);
+                                    updateSet.get(stage).add(index1);
                                     unComputed.remove(index1);
                                 }
                                 break;

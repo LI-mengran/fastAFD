@@ -2,6 +2,7 @@ import FastAFD.AEI.REIwithTopK;
 import FastAFD.AEI.RelaxedEvidenceInversion;
 import FastAFD.AEI.TopKSet;
 import FastAFD.AFD.AFDSet;
+import FastAFD.TANE.LatticeTranverse;
 import FastAFD.Utils;
 import FastAFD.evidence.EvidenceSetBuilder;
 import FastAFD.input.ColumnStats;
@@ -48,8 +49,8 @@ public class Main implements Runnable{
 //    String columnThreshold = "";
 
     @Option(names = {"-e"}, description = "evidences file")
-    String evidencesIndexesFile = "./evidenceSet/evidencesIndextax.csv";
-//    String evidencesIndexesFile = "";
+//    String evidencesIndexesFile = "./evidenceSet/evidencesIndexpcm.csv";
+    String evidencesIndexesFile = "";
     @Override
     public void run(){
         double maxThreshold = 0.5;
@@ -104,18 +105,26 @@ public class Main implements Runnable{
         }
 
         start = Instant.now();
-        RelaxedEvidenceInversion relaxedEvidenceInversion = new RelaxedEvidenceInversion(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),nog1Error);
+//        RelaxedEvidenceInversion relaxedEvidenceInversion = new RelaxedEvidenceInversion(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),nog1Error);
 
-//        REIwithTopK relaxedEvidenceInversion = new REIwithTopK(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),nog1Error,1000);
-
+        REIwithTopK relaxedEvidenceInversion = new REIwithTopK(predicatesBuilder, input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),nog1Error,1000);
+//
         List<TopKSet> afdSet = relaxedEvidenceInversion.buildTopK(threshold);
-        predicatesBuilder.printTopK(afdSet,input.getParsedColumns());
-
+////        predicatesBuilder.printTopK(afdSet,input.getParsedColumns());
+//
 //        AFDSet afdset = relaxedEvidenceInversion.buildAFD(threshold);
 //        predicatesBuilder.printAFD(afdset, input.getParsedColumns());
 
         duration = Duration.between(start, Instant.now());
         System.out.println("[EvidenceSet Inversion Time] : " + duration.toMillis() + "ms");
+
+
+//        start = Instant.now();
+//        LatticeTranverse latticeTranverse = new LatticeTranverse(predicatesBuilder,input.getRowCount(),evidenceSetBuilder.getEvidenceSet(),threshold);
+//        latticeTranverse.findRFD();
+//        System.out.println("Tranverse Time] : " + duration.toMillis() + "ms");
+
+
 
     }
     public static void main(String[] args) {
