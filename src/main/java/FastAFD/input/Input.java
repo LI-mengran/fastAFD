@@ -38,8 +38,8 @@ public class Input {
 
         parsedColumns = buildParsedColumns(columns);
 //        intInput = buildIntInput(parsedColumns);
-//        System.out.println(" [Input] # of Tuples: " + rowCount);
-//        System.out.println(" [Input] # of Attributes: " + colCount);
+        System.out.println(" [Input] # of Tuples: " + rowCount);
+        System.out.println(" [Input] # of Attributes: " + colCount);
     }
 
     private Column[] readRelationalInputToColumns(RelationalInput relationalInput, int rowLimit) {
@@ -107,6 +107,10 @@ public class Input {
     }
 
     public int getDigit(String s){
+        if(!s.contains(".")) {
+            System.out.println("Integer with type Double");
+            return 0;
+        }
         return s.split("\\.")[1].length();
     }
 

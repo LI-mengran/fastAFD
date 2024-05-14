@@ -159,7 +159,6 @@ public class PredicatesBuilder {
                     }
 
                     tempArray.add(row);
-
                 }
 
                 br.close();

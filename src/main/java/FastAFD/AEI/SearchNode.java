@@ -22,6 +22,8 @@ public class SearchNode {
     }
 
     public Long sub(int rightTresholdIndex, Long count){
+//        Long t = ;
+//        remainCounts = new ArrayList<>(remainCounts);
         remainCounts.set(rightTresholdIndex, remainCounts.get(rightTresholdIndex) - count);
         return remainCounts.get(rightTresholdIndex);
     }

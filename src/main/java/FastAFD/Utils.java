@@ -216,9 +216,6 @@ public class Utils {
 //                    if(dp[i][j] <= threshold)
 //                        earlyTerminateFlag = false;
                 }
-//                if(earlyTerminateFlag){
-//                    return 999999;
-//                }
             }
             return dp[len1][len2];
         }

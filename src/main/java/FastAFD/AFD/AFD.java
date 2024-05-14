@@ -6,6 +6,7 @@ public class AFD {
     List<Integer> thresholdsIndexes;
     Integer columnIndex;
 
+
     public AFD(List<Integer> thresholdsIndexes, Integer columnIndex){
         this.thresholdsIndexes = thresholdsIndexes;
         this.columnIndex = columnIndex;

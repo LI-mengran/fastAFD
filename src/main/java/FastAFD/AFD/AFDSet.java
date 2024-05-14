@@ -1,5 +1,6 @@
 package FastAFD.AFD;
 
+import FastAFD.AEI.AFDCandidate;
 import it.unimi.dsi.fastutil.doubles.AbstractDouble2FloatSortedMap;
 
 import javax.print.attribute.IntegerSyntax;
@@ -9,6 +10,7 @@ public class AFDSet {
     List<List<AFD>> AFDs;
     int columnIndex;
     List<AFD> minimalAFDs;
+//    HashMap<List<Integer>, AFD> mp = new HashMap<List<Integer>, AFD>();
 
     public AFDSet(){
         AFDs = new ArrayList<>();
@@ -30,15 +32,29 @@ public class AFDSet {
 
     //a afd is minimal when the left is maximum and the right is minimum;
     public void add(AFD afd){
-//        for(int RIndex = afd.thresholdsIndexes.get(afd.columnIndex); RIndex < AFDs.size(); RIndex++){
-//            List<AFD> removedSet = new ArrayList<>();
-//            for(AFD fd : AFDs.get(RIndex)) {
-//                if(fd.thresholdsIndexes.get(columnIndex) > afd.thresholdsIndexes.get(columnIndex))continue;
-//                if(canCover(fd.thresholdsIndexes,afd.thresholdsIndexes)) removedSet.add(fd);
+        for(int RIndex = 0; RIndex <= afd.thresholdsIndexes.get(afd.columnIndex); RIndex++){
+            List<AFD> removedSet = new ArrayList<>();
+            for(AFD fd : AFDs.get(RIndex)) {
+                if(lhsEquals(fd.thresholdsIndexes,afd.thresholdsIndexes)){
+                    removedSet.add(fd);
+                }
+            }
+                AFDs.get(RIndex).removeAll(removedSet);
+        }
+
+//        List<AFD> removedSet = new ArrayList<>();
+//        for(AFD fd : AFDs.get(afd.thresholdsIndexes.get(afd.columnIndex))) {
+//            if(canCover(fd.thresholdsIndexes,afd.thresholdsIndexes)){
+//                removedSet.add(fd);
 //            }
-//                AFDs.get(RIndex).removeAll(removedSet);
 //        }
+//        AFDs.get(afd.thresholdsIndexes.get(afd.columnIndex)).removeAll(removedSet);
+
         AFDs.get(afd.thresholdsIndexes.get(columnIndex)).add(afd);
+//        List<Integer> mpIndex = new ArrayList<>(afd.getThresholdsIndexes());
+//        mpIndex.set(columnIndex, -1);
+//        mp.put(mpIndex,afd);
+
         //printout
 //        if(AFDs.get(afd.thresholdsIndexes.get(columnIndex)).size() % 100 == 0)
 //            System.out.println(AFDs.get(afd.thresholdsIndexes.get(columnIndex)).size());
@@ -50,10 +66,13 @@ public class AFDSet {
             if(i == columnIndex)continue;
             total += LIndexes.get(i);
         }
-        for(AFD afd : AFDs.get(RIndex)){
-            if(afd.getTotalLIndexes() < total)continue;
-            if(canCover(LIndexes, afd.thresholdsIndexes))return true;
+        for(int index = RIndex; index < AFDs.size(); index ++){
+            for(AFD afd : AFDs.get(index)){
+                if(afd.getTotalLIndexes() > total)continue;
+                if(canCover(LIndexes, afd.thresholdsIndexes))return true;
+            }
         }
+
         return false;
     }
 
@@ -69,6 +88,7 @@ public class AFDSet {
         while (listIterator.hasPrevious()) {
             List<AFD> afds = listIterator.previous();
             // Now, 'afds' contains a list of AFD objects in reverse order
+            List<AFD> removeSet = new ArrayList<>();
             for (AFD afd : afds) {
                 boolean flag = true;
                 for (AFD result : results) {
@@ -77,7 +97,11 @@ public class AFDSet {
                             flag = false;
                             break;
                         }
-                    } else {
+                        if(canCover(result.thresholdsIndexes, afd.thresholdsIndexes)){
+                            removeSet.add(result);
+                        }
+                    }
+                    else {
                         if (afd.getTotalLIndexes() >= result.getTotalLIndexes()) {
                             if (canCover(afd.thresholdsIndexes, result.thresholdsIndexes)) {
                                 flag = false;
@@ -86,7 +110,10 @@ public class AFDSet {
                         }
                     }
                 }
-                if(flag) results.add(afd);
+                if(flag) {
+                    results.add(afd);
+                    results.removeAll(removeSet);
+                }
             }
         }
         AFDs = null;
@@ -100,6 +127,16 @@ public class AFDSet {
         for(int i = 0; i < target.size(); i++){
             if(i == columnIndex)continue;
             if(target.get(i) < currentIdx.get(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    boolean lhsEquals(List<Integer> target, List<Integer> currentIdx){
+        for(int i = 0; i < target.size(); i++){
+            if(i == columnIndex)continue;
+            if(!Objects.equals(target.get(i), currentIdx.get(i))) {
                 return false;
             }
         }
@@ -123,4 +160,6 @@ public class AFDSet {
     public List<List<AFD>> getAFDs() {
         return AFDs;
     }
+
+
 }

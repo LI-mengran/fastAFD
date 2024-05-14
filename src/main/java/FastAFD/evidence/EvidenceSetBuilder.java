@@ -256,6 +256,7 @@ public class EvidenceSetBuilder {
         for(var evidence : evidenceSet.getEvidenceSet()){
             evidence.count = evidenceSet.getEvidenceNumber(evidence);
         }
+//        evidenceSet.sort();
     }
 
     public List<EvidenceTable> updateNumberColumn( List<ParsedColumn<?>> pColumns, List<EvidenceTable> evidenceTables, int columnIndex, int startTupleId){
@@ -287,7 +288,7 @@ public class EvidenceSetBuilder {
         int clusterId = pli.getFirstIndexWhereKeyIsLTE(new BigDecimal(val).subtract(BigDecimal.valueOf(demarcations.get(0))).setScale(digit, BigDecimal.ROUND_HALF_UP));
         while(clusterId < pli.size()){
 //            double distance = Math.abs(Double.parseDouble(df.format(val - getDoubleValue(pli.getKeys().get(clusterId)))));
-            BigDecimal distance = new BigDecimal(val).subtract(BigDecimal.valueOf(getDoubleValue(pli.getKeys().get(clusterId)))).abs().setScale(digit,BigDecimal.ROUND_HALF_UP);
+            BigDecimal distance = new BigDecimal(val).subtract(BigDecimal.valueOf(getDoubleValue(pli.getKeys().get(clusterId)))).abs().setScale(digit, BigDecimal.ROUND_HALF_UP);
             if(distance.doubleValue() > demarcations.get(0))break;
             for(int stage = demarcations.size() - 1; stage >= 0; stage--) {
                 if (distance.doubleValue() <= demarcations.get(stage)) {

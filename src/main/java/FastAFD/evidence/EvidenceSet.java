@@ -1,9 +1,6 @@
 package FastAFD.evidence;
 
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class EvidenceSet {
     List<Evidence> evidenceSet = new ArrayList<>();
@@ -35,6 +32,10 @@ public class EvidenceSet {
 
     public void add(Evidence evidence){
         evidenceSet.add(evidence);
+    }
+
+    public void sort(){
+        Collections.sort(evidenceSet, Comparator.comparing(Evidence::getCount).reversed());
     }
 
 }
