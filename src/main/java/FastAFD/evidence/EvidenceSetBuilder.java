@@ -4,24 +4,21 @@ import FastAFD.Utils;
 import FastAFD.input.ColumnStats;
 import FastAFD.input.Input;
 import FastAFD.input.ParsedColumn;
-import FastAFD.input.RelationalInput;
 import FastAFD.passjoin.PassJoin;
 import FastAFD.passjoin.SubstringableString;
+import FastAFD.pli.Cluster;
 import FastAFD.pli.Pli;
 import FastAFD.pli.PliBuilder;
+import FastAFD.pli.PliShard;
 import FastAFD.predicates.Predicate;
 import FastAFD.predicates.PredicatesBuilder;
-import com.sun.jdi.IntegerValue;
 import org.roaringbitmap.RoaringBitmap;
 
 import java.io.*;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static FastAFD.Utils.calculateEditDistance;
@@ -49,7 +46,9 @@ public class EvidenceSetBuilder {
     int computeTime = 0;
     List<Integer> maxDemarcations = new ArrayList<>();
 
-    public EvidenceSetBuilder(PredicatesBuilder predicatesBuilder, PliBuilder pliBuilder, Input input){
+    long shardLength =  10000;
+
+    public EvidenceSetBuilder(PredicatesBuilder predicatesBuilder, PliBuilder pliBuilder, Input input, int shardLength){
         this.predicatesBuilder = predicatesBuilder;
         this.pliBuilder = pliBuilder;
         this.columnNumber = predicatesBuilder.getColumnStats().size();
@@ -57,6 +56,7 @@ public class EvidenceSetBuilder {
         this.tableIds = new RoaringBitmap();
         this.pColumns = input.getParsedColumns();
         this.rowNumber = input.getRowCount();
+        this.shardLength = shardLength;
         for(int index = 0; index < columnNumber; index ++){
             ColumnStats columnStat = predicatesBuilder.getColumnStats().get(index);
             if(!columnStat.isNum){
@@ -86,7 +86,7 @@ public class EvidenceSetBuilder {
         }
 
         Utils.editDistanceBuffer = new int[longestLength + 1][longestLength + 1];
-        for (int i = 0; i < longestLength; i++) {
+        for (int i = 0; i <= longestLength; i++) {
             Utils.editDistanceBuffer[0][i] = i;
             Utils.editDistanceBuffer[i][0] = i;
         }
@@ -154,41 +154,383 @@ public class EvidenceSetBuilder {
         System.out.println("pass" + ':' + time1);
         System.out.println("normal" + ':' + time2);
 
-//
-//        Instant start = Instant.now();
-//        for(int startTupleId = 0; startTupleId < rowNumber; startTupleId++) {
-//            for (int columnIndex = 0; columnIndex < columnNumber - 1; columnIndex++) {
-//                if (columnIndex == 10) continue;
-//                int passJoinIndex = stringColumnIndex.indexOf(columnIndex);
-//                if (passJoinIndex == -1) {
-//                    return;
-//                }
-//
-//
-//                String val = (String) pColumns.get(columnIndex).getValue(startTupleId);
-//                HashMap<String, Integer> updateIds = passJoin.getSimilaritySet(val, passJoinIndex,startTupleId, (Pli<String>) pliBuilder.getPlis().get(columnIndex));
+    }
+
+    public void buildDiffSetByPli()  {
+//        boolean[] flag = new boolean[5778];
+//        AtomicLong count = new AtomicLong();
+        for(int shardIndex = 0; shardIndex <= ((long) rowNumber * (rowNumber - 1) / 2 - 1) / shardLength; shardIndex ++){
+            List<List<Integer>> eviSet = new ArrayList<>();
+            if(shardIndex == ((long) rowNumber * (rowNumber - 1) / 2 - 1) / shardLength){
+                for(int i = 0; i < ((long) rowNumber * (rowNumber - 1) / 2 ) % shardLength; i++){
+                    List<Integer> tmp = Collections.nCopies(columnNumber, 0);
+//            flag[i] = false;
+                    eviSet.add(new ArrayList<>(tmp));
+                }
+            }
+            else
+                for(int i = 0; i < shardLength; i++){
+                    List<Integer> tmp = Collections.nCopies(columnNumber, 0);
+    //            flag[i] = false;
+                    eviSet.add(new ArrayList<>(tmp));
+                }
+            for(int columnIndex = 0; columnIndex < columnNumber; columnIndex++){
+                Pli<?> pli = pliBuilder.getPlis().get(columnIndex);
+                if(numberColumnIndex.contains(columnIndex)){
+                    for(int i = 0; i < pli.size(); i++){
+                        List<Integer> inner = pli.getCluster(i).getRawCluster();
+                        for(int i1 = 0; i1 < inner.size(); i1++){
+                            for(int j1 = i1 + 1; j1 < inner.size(); j1++){
+                                if(((long) inner.get(j1) * (inner.get(j1) - 1) / 2 + inner.get(i1)) / shardLength != shardIndex)continue;
+                                eviSet.get((int) (((inner.get(j1)% shardLength) * ((inner.get(j1) - 1)% shardLength) / 2 + inner.get(i1) + shardLength) % shardLength)).set(columnIndex, predicatesBuilder.getDemarcationsByColumn(columnIndex).size());
+                            }
+                        }
+                        for(int j = i + 1; j < pli.size(); j++){
+                            double val1 = getDoubleValue(pli.getKeys().get(i));
+                            double val2 = getDoubleValue(pli.getKeys().get(j));
+                            int digit = pColumns.get(columnIndex).getDigit();
+                            List<Double> demarcations = predicatesBuilder.getDemarcationsByColumn(columnIndex);
+                            BigDecimal distance = new BigDecimal(val1).subtract(BigDecimal.valueOf(val2)).abs().setScale(digit, BigDecimal.ROUND_HALF_UP);
+                            if(distance.doubleValue() > demarcations.get(0))continue;
+                            for(int stage = demarcations.size() - 1; stage >= 0; stage--) {
+                                if (distance.doubleValue() <= demarcations.get(stage)) {
+                                    for(int i1 : pli.getCluster(i).getRawCluster()) 
+                                        for(int j1 : pli.getCluster(j).getRawCluster()){
+                                            int i2 = i1;
+                                            if(i1 > j1){
+                                                i2 = j1;
+                                                j1 = i1;
+                                            }
+                                            if( ((j1 % shardLength) * ((j1 - 1) % shardLength) / 2 + i2) / shardLength != shardIndex)continue;
+                                            eviSet.get((int) (((j1 % shardLength) * ((j1 - 1) % shardLength) / 2 + i2 + shardLength) % shardLength)).set(columnIndex,stage + 1);
+                                        }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                else{
+                    for(int i = 0; i < pli.size(); i++){
+                        List<Integer> inner = pli.getCluster(i).getRawCluster();
+                        for(int i1 = 0; i1 < inner.size(); i1++){
+                            for(int j1 = i1 + 1; j1 < inner.size(); j1++){
+                                if(( ((inner.get(j1)% shardLength) * ((inner.get(j1) - 1)% shardLength)) / 2 + inner.get(i1)) / (shardLength) != shardIndex)continue;
+                                eviSet.get((int) (((inner.get(j1)% shardLength) * ((inner.get(j1) - 1)% shardLength) / 2 + inner.get(i1) + shardLength) % shardLength)).set(columnIndex, predicatesBuilder.getDemarcationsByColumn(columnIndex).size());
+                            }
+                        }
+                        for(int j = i + 1; j < pli.size(); j++){
+                            String val1 = (String) pli.getKeys().get(i);
+                            String val2 = (String) pli.getKeys().get(j);
+                            List<Double> demarcations = predicatesBuilder.getDemarcationsByColumn(columnIndex);
+                            int distance = calculateEditDistance(val1, val2);
+                            if(distance > demarcations.get(0))continue;
+                            for(int stage = demarcations.size() - 1; stage >= 0; stage--) {
+                                if (distance <= demarcations.get(stage)) {
+                                    for(int i1 : pli.getCluster(i).getRawCluster())
+                                        for(int j1 : pli.getCluster(j).getRawCluster()){
+                                            int i2 = i1;
+                                            if(i1 > j1){
+                                                i2 = j1;
+                                                j1 = i1;
+                                            }
+                                            if( ((j1 % shardLength) * ((j1 - 1) % shardLength) / 2 + i2) / shardLength != shardIndex)continue;
+                                            eviSet.get((int) (((j1 % shardLength) * ((j1 - 1) % shardLength) / 2 + i2 + shardLength) % shardLength)).set(columnIndex,stage + 1);
+                                        }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            HashMap<List<Integer>, Long> map = new HashMap<>();
+
+            eviSet.forEach((k) -> map.merge(k, 1L, Long::sum));
+            map.forEach((k, v) -> {
+                List<Predicate> evi = new ArrayList<>();
+                for(int index = 0; index < k.size(); index++){
+                    evi.add(predicatesBuilder.getPredicatesByColumn(index).get(k.get(index)));
+                }
+                Evidence evidence = new Evidence(evi, k, v, predicatesBuilder.getMaxPredicateIndex());
+                evidenceSet.add(evidence, false);
+//                count.addAndGet(v);
+            });
+//            System.out.println(count);
+
+
+        }
+//        for(Evidence evi : evidenceSet.getEvidenceSet()){
+//            if(evi == null){
+//                System.out.println("csc");
 //            }
-//            System.out.println(startTupleId);
 //        }
-//        Duration duration = Duration.between(start, Instant.now());
-//        System.out.println("pass" + ':' + duration.toMillis());
-//
-//            start = Instant.now();
-//            HashMap<String, Integer> mp = new HashMap<>();
-//            for(int startTupleId = 0; startTupleId < rowNumber; startTupleId++) {
-//                for (int columnIndex = 0; columnIndex < columnNumber - 1; columnIndex++) {
-//                    String val = (String) pColumns.get(columnIndex).getValue(startTupleId);
-//                    for (int index = startTupleId; index < rowNumber; index++) {
-//                        String compareValue = (String) pColumns.get(columnIndex).getValue(index);
-//                        double distance = Utils.calculateEditDistanceWithThreshold(new SubstringableString(val), 0, val.length(), new SubstringableString(compareValue), 0, compareValue.length(), maxDemarcations.get(0).intValue(), Utils.editDistanceBuffer);
-//                        mp.put(compareValue, (int) distance);
-//                    }
-//                }
-//            }
-//            duration = Duration.between(start, Instant.now());
-//            System.out.println("normal" + ':' + duration.toMillis());
+//        System.out.println("1");
+//        evidenceSet.sort();
+    }
+
+    public void buildDiffSetBySepPli(){
+        List<PliShard> pliShards = new ArrayList<>();
+        for(int i = 0; i <= rowNumber / shardLength; i++){
+            pliShards.add(new PliShard(new ArrayList<>(),(int) (i * shardLength), Math.min((int)((i + 1) * shardLength), rowNumber)));
+        }
+        for(int columnIndex = 0; columnIndex < columnNumber; columnIndex++){
+            Pli<?> pli = pliBuilder.getPlis().get(columnIndex);
+            List<List<Cluster>> clusterss = new ArrayList<>();
+            if(pColumns.get(columnIndex).getType() == String.class){
+                List<List<String>> keyss = new ArrayList<>();
+                List<Map<String, Integer>> translators = new ArrayList<>();
+                List<HashSet<String>> keySets = new ArrayList<>();
+                for(int i = 0; i <= rowNumber / shardLength; i++){
+                    clusterss.add(new ArrayList<>());
+                    translators.add(new HashMap<String, Integer>());
+                    keySets.add(new HashSet<>());
+                }
+                for(Object key : pli.getKeys()){
+                    for(int index : pli.getClusterByKey(key).getRawCluster()){
+                        int shardIndex = (int) (index / shardLength);
+                        keySets.get(shardIndex).add((String) key);
+                    }
+                }
+                for(int index = 0; index < keySets.size(); index++){
+                    keyss.add(new ArrayList<>(keySets.get(index)));
+                    List<String> keyset = keyss.get(index);
+                    for(int i = 0; i < keyset.size(); i++) {
+                        clusterss.get(index).add(new Cluster());
+                        translators.get(index).put(keyset.get(i),i);
+                    }
+
+                }
+                for(Object key : pli.getKeys()){
+                    for(int index : pli.getClusterByKey(key).getRawCluster()){
+                        int shardIndex = (int) (index / shardLength);
+                        clusterss.get(shardIndex).get(translators.get(shardIndex).get((String) key)).add((int) (index - shardIndex * shardLength));
+                    }
+                }
+                for(int i = 0; i <= rowNumber / shardLength; i++){
+                    pliShards.get(i).plis.add(new Pli<>(false, clusterss.get(i), keyss.get(i), translators.get(i)));
+                }
 
 
+            }
+            else if(pColumns.get(columnIndex).getType() == Double.class){
+                List<List<Double>> keyss = new ArrayList<>();
+                List<Map<Double, Integer>> translators = new ArrayList<>();
+                List<HashSet<Double>> keySets = new ArrayList<>();
+                for(int i = 0; i <= rowNumber / shardLength; i++){
+                    clusterss.add(new ArrayList<>());
+                    translators.add(new HashMap<Double, Integer>());
+                    keySets.add(new HashSet<>());
+                }
+                for(Object key : pli.getKeys()){
+                    for(int index : pli.getClusterByKey(key).getRawCluster()){
+                        int shardIndex = (int) (index / shardLength);
+                        keySets.get(shardIndex).add((Double) key);
+                    }
+                }
+                for(int index = 0; index < keySets.size(); index++){
+                    keyss.add(new ArrayList<>(keySets.get(index)));
+                    List<Double> keyset = keyss.get(index);
+                    for(int i = 0; i < keyset.size(); i++) {
+                        clusterss.get(index).add(new Cluster());
+                        translators.get(index).put(keyset.get(i),i);
+                    }
+
+                }
+                for(Object key : pli.getKeys()){
+                    for(int index : pli.getClusterByKey(key).getRawCluster()){
+                        int shardIndex = (int) (index / shardLength);
+                        clusterss.get(shardIndex).get(translators.get(shardIndex).get((Double) key)).add((int) (index - shardIndex * shardLength));
+                    }
+                }
+                for(int i = 0; i <= rowNumber / shardLength; i++){
+                    pliShards.get(i).plis.add(new Pli<>(true, clusterss.get(i), keyss.get(i), translators.get(i)));
+                }
+
+
+            }
+            else{
+                List<List<Integer>> keyss = new ArrayList<>();
+                List<Map<Integer, Integer>> translators = new ArrayList<>();
+                List<HashSet<Integer>> keySets = new ArrayList<>();
+                for(int i = 0; i <= rowNumber / shardLength; i++){
+                    clusterss.add(new ArrayList<>());
+                    translators.add(new HashMap<Integer, Integer>());
+                    keySets.add(new HashSet<>());
+                }
+                for(Object key : pli.getKeys()){
+                    for(int index : pli.getClusterByKey(key).getRawCluster()){
+                        int shardIndex = (int) (index / shardLength);
+                        keySets.get(shardIndex).add((Integer) key);
+                    }
+                }
+                for(int index = 0; index < keySets.size(); index++){
+                    keyss.add(new ArrayList<>(keySets.get(index)));
+                    List<Integer> keyset = keyss.get(index);
+                    for(int i = 0; i < keyset.size(); i++) {
+                        clusterss.get(index).add(new Cluster());
+                        translators.get(index).put(keyset.get(i),i);
+                    }
+
+                }
+                for(Object key : pli.getKeys()){
+                    for(int index : pli.getClusterByKey(key).getRawCluster()){
+                        int shardIndex = (int) (index / shardLength);
+                        clusterss.get(shardIndex).get(translators.get(shardIndex).get((Integer) key)).add((int) (index - shardIndex * shardLength));
+                    }
+                }
+                for(int i = 0; i <= rowNumber / shardLength; i++){
+                    pliShards.get(i).plis.add(new Pli<>(true, clusterss.get(i), keyss.get(i), translators.get(i)));
+                }
+
+
+            }
+        }
+        for(int i = 0; i < pliShards.size(); i++){
+            for(int j = i; j < pliShards.size(); j++){
+                List<List<Integer>> eviSet = new ArrayList<>();
+                if(i == j){
+                    for(int k = 0; k < pliShards.get(i).getLength() * (pliShards.get(i).getLength() - 1) / 2; k++){
+                        List<Integer> tmp = Collections.nCopies(columnNumber, 0);
+                        eviSet.add(new ArrayList<>(tmp));
+                    }
+                    for(int columnIndex = 0; columnIndex < columnNumber; columnIndex++){
+                        Pli<?> pli = pliShards.get(i).getPlis().get(columnIndex);
+                        if(numberColumnIndex.contains(columnIndex)){
+                            for(int index1 = 0; index1 < pli.size(); index1++){
+                                List<Integer> inner = pli.getCluster(index1).getRawCluster();
+                                for(int i1 = 0; i1 < inner.size(); i1++){
+                                    for(int j1 = i1 + 1; j1 < inner.size(); j1++){
+                                        eviSet.get( (inner.get(j1) * (inner.get(j1) - 1) / 2 + inner.get(i1))).set(columnIndex, predicatesBuilder.getDemarcationsByColumn(columnIndex).size());
+                                    }
+                                }
+                                double val1 = getDoubleValue(pli.getKeys().get(index1));
+                                for(int index2 = index1 + 1; index2 < pli.size(); index2++){
+                                    double val2 = getDoubleValue(pli.getKeys().get(index2));
+                                    int digit = pColumns.get(columnIndex).getDigit();
+                                    List<Double> demarcations = predicatesBuilder.getDemarcationsByColumn(columnIndex);
+                                    BigDecimal distance = new BigDecimal(val1).subtract(BigDecimal.valueOf(val2)).abs().setScale(digit, BigDecimal.ROUND_HALF_UP);
+                                    if(distance.doubleValue() > demarcations.get(0))continue;
+                                    for(int stage = demarcations.size() - 1; stage >= 0; stage--) {
+                                        if (distance.doubleValue() <= demarcations.get(stage)) {
+                                            for(int i1 : pli.getCluster(index1).getRawCluster())
+                                                for(int j1 : pli.getCluster(index2).getRawCluster()){
+                                                    int i2 = i1;
+                                                    if(i1 > j1){
+                                                        i2 = j1;
+                                                        j1 = i1;
+                                                    }
+                                                    eviSet.get( (j1  * (j1 - 1) / 2 + i2)).set(columnIndex,stage + 1);
+                                                }
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else{
+                            for(int index1 = 0; index1 < pli.size(); index1++){
+                                List<Integer> inner = pli.getCluster(index1).getRawCluster();
+                                for(int i1 = 0; i1 < inner.size(); i1++){
+                                    for(int j1 = i1 + 1; j1 < inner.size(); j1++){
+                                        eviSet.get( (inner.get(j1) * (inner.get(j1) - 1) / 2 + inner.get(i1))).set(columnIndex, predicatesBuilder.getDemarcationsByColumn(columnIndex).size());
+                                    }
+                                }
+                                for(int index2  = index1  + 1; index2 < pli.size(); index2++){
+                                    String val1 = (String) pli.getKeys().get(index1);
+                                    String val2 = (String) pli.getKeys().get(index2);
+                                    List<Double> demarcations = predicatesBuilder.getDemarcationsByColumn(columnIndex);
+                                    int distance = calculateEditDistance(val1, val2);
+                                    if(distance > demarcations.get(0))continue;
+                                    for(int stage = demarcations.size() - 1; stage >= 0; stage--) {
+                                        if (distance <= demarcations.get(stage)) {
+                                            for(int i1 : pli.getCluster(index1).getRawCluster())
+                                                for(int j1 : pli.getCluster(index2).getRawCluster()){
+                                                    int i2 = i1;
+                                                    if(i1 > j1){
+                                                        i2 = j1;
+                                                        j1 = i1;
+                                                     }
+                                                    eviSet.get( j1  * (j1 - 1) / 2 + i2).set(columnIndex,stage + 1);
+                                        }
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                }
+                else{
+                    for(int k = 0; k < pliShards.get(i).getLength() * pliShards.get(j).getLength(); k++){
+                        List<Integer> tmp = Collections.nCopies(columnNumber, 0);
+                        eviSet.add(new ArrayList<>(tmp));
+                    }
+                    for(int columnIndex = 0; columnIndex < columnNumber; columnIndex++){
+                        if(numberColumnIndex.contains(columnIndex)){
+                            Pli<?> pliA = pliShards.get(i).getPlis().get(columnIndex);
+                            Pli<?> pliB = pliShards.get(j).getPlis().get(columnIndex);
+
+                            for(int index1 = 0; index1 < pliA.getClusters().size(); index1++){
+                                for(int index2 = 0; index2 < pliB.getClusters().size(); index2++){
+                                    double val1 = getDoubleValue(pliA.getKeys().get(index1));
+                                    double val2 = getDoubleValue(pliB.getKeys().get(index2));
+                                    int digit = pColumns.get(columnIndex).getDigit();
+                                    List<Double> demarcations = predicatesBuilder.getDemarcationsByColumn(columnIndex);
+                                    BigDecimal distance = new BigDecimal(val1).subtract(BigDecimal.valueOf(val2)).abs().setScale(digit, BigDecimal.ROUND_HALF_UP);
+                                    if(distance.doubleValue() > demarcations.get(0))continue;
+                                    for(int stage = demarcations.size() - 1; stage >= 0; stage--) {
+                                        if (distance.doubleValue() <= demarcations.get(stage)) {
+                                            for(int i1 : pliA.getCluster(index1).getRawCluster())
+                                                for(int j1 : pliB.getCluster(index2).getRawCluster()){
+                                                    eviSet.get(i1 * (pliShards.get(j).getLength()) + j1).set(columnIndex,stage + 1);
+                                                }
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else{
+                            Pli<?> pliA = pliShards.get(i).getPlis().get(columnIndex);
+                            Pli<?> pliB = pliShards.get(j).getPlis().get(columnIndex);
+
+
+                            for(int index1 = 0; index1 < pliA.getClusters().size(); index1++){
+                                for(int index2 = 0; index2 < pliB.getClusters().size(); index2++){
+                                    String val1 = (String) pliA.getKeys().get(index1);
+                                    String val2 = (String) pliB.getKeys().get(index2);
+                                    List<Double> demarcations = predicatesBuilder.getDemarcationsByColumn(columnIndex);
+                                    int distance = calculateEditDistance(val1, val2);
+                                    if(distance > demarcations.get(0))continue;
+                                    for(int stage = demarcations.size() - 1; stage >= 0; stage--) {
+                                        if (distance <= demarcations.get(stage)) {
+                                            for(int i1 : pliA.getCluster(index1).getRawCluster())
+                                                for(int j1 : pliB.getCluster(index2).getRawCluster()){
+                                                    eviSet.get(i1 * (pliShards.get(j).getLength()) + j1).set(columnIndex,stage + 1);
+                                                }
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                HashMap<List<Integer>, Long> map = new HashMap<>();
+
+                eviSet.forEach((k) -> map.merge(k, 1L, Long::sum));
+                map.forEach((k, v) -> {
+                    List<Predicate> evi = new ArrayList<>();
+                    for(int index = 0; index < k.size(); index++){
+                        evi.add(predicatesBuilder.getPredicatesByColumn(index).get(k.get(index)));
+                    }
+                    Evidence evidence = new Evidence(evi, k, v, predicatesBuilder.getMaxPredicateIndex());
+                    evidenceSet.add(evidence, false);
+//                count.addAndGet(v);
+                });
+            }
+        }
     }
 
     public void buildEvidenceSet() {
@@ -874,7 +1216,7 @@ public class EvidenceSetBuilder {
                     integers.add(Integer.parseInt(values[index]));
                 }
                 Evidence evidence = new Evidence(integers, Long.parseLong(values[values.length - 1]));
-                evidenceSet.add(evidence);
+                evidenceSet.add(evidence,true);
             }
         }  catch (IOException e) {
             throw new RuntimeException(e);
@@ -902,7 +1244,7 @@ public class EvidenceSetBuilder {
     }
 
     public void indexOutput(String name){
-        String fileName = "evidencesIndex" + name;
+        String fileName = "evidenceSet/evidencesIndex_" + name;
 
         try {
 
@@ -916,7 +1258,7 @@ public class EvidenceSetBuilder {
                     evi += evidence.getPredicateIndex(index);
                     evi += ',';
                 }
-                evi += evidenceSet.evidenceNumber.get(evidence.bitSet);
+                evi += evidenceSet.evidenceNumber.get(evidence.bitSet) != null ? evidenceSet.evidenceNumber.get(evidence.bitSet) : evidence.getCount();
                 printWriter.println(evi);
             }
 

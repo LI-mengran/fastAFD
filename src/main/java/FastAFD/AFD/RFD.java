@@ -2,12 +2,12 @@ package FastAFD.AFD;
 
 import java.util.List;
 
-public class AFD {
+public class RFD {
     List<Integer> thresholdsIndexes;
     Integer columnIndex;
 
 
-    public AFD(List<Integer> thresholdsIndexes, Integer columnIndex){
+    public RFD(List<Integer> thresholdsIndexes, Integer columnIndex){
         this.thresholdsIndexes = thresholdsIndexes;
         this.columnIndex = columnIndex;
     }

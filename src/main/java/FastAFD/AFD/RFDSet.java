@@ -1,23 +1,19 @@
 package FastAFD.AFD;
 
-import FastAFD.AEI.AFDCandidate;
-import it.unimi.dsi.fastutil.doubles.AbstractDouble2FloatSortedMap;
-
-import javax.print.attribute.IntegerSyntax;
 import java.util.*;
 
-public class AFDSet {
-    List<List<AFD>> AFDs;
+public class RFDSet {
+    List<List<RFD>> AFDs;
     int columnIndex;
-    List<AFD> minimalAFDs;
-//    HashMap<List<Integer>, AFD> mp = new HashMap<List<Integer>, AFD>();
+    List<RFD> minimalAFDs;
+//    HashMap<List<Integer>, RFD> mp = new HashMap<List<Integer>, RFD>();
 
-    public AFDSet(){
+    public RFDSet(){
         AFDs = new ArrayList<>();
         minimalAFDs = new ArrayList<>();
         AFDs.add(new ArrayList<>());
     }
-    public AFDSet(int columnIndex, int maxRIndex){
+    public RFDSet(int columnIndex, int maxRIndex){
         AFDs = new ArrayList<>();
         minimalAFDs = new ArrayList<>();
         for(int i = 0; i < maxRIndex - 1; i++){
@@ -26,15 +22,15 @@ public class AFDSet {
         this.columnIndex = columnIndex;
     }
 
-    public void directlyAdd(AFD afd){
+    public void directlyAdd(RFD afd){
         minimalAFDs.add(afd);
     }
 
     //a afd is minimal when the left is maximum and the right is minimum;
-    public void add(AFD afd){
+    public void add(RFD afd){
         for(int RIndex = 0; RIndex <= afd.thresholdsIndexes.get(afd.columnIndex); RIndex++){
-            List<AFD> removedSet = new ArrayList<>();
-            for(AFD fd : AFDs.get(RIndex)) {
+            List<RFD> removedSet = new ArrayList<>();
+            for(RFD fd : AFDs.get(RIndex)) {
                 if(lhsEquals(fd.thresholdsIndexes,afd.thresholdsIndexes)){
                     removedSet.add(fd);
                 }
@@ -42,8 +38,8 @@ public class AFDSet {
                 AFDs.get(RIndex).removeAll(removedSet);
         }
 
-//        List<AFD> removedSet = new ArrayList<>();
-//        for(AFD fd : AFDs.get(afd.thresholdsIndexes.get(afd.columnIndex))) {
+//        List<RFD> removedSet = new ArrayList<>();
+//        for(RFD fd : AFDs.get(afd.thresholdsIndexes.get(afd.columnIndex))) {
 //            if(canCover(fd.thresholdsIndexes,afd.thresholdsIndexes)){
 //                removedSet.add(fd);
 //            }
@@ -67,7 +63,7 @@ public class AFDSet {
             total += LIndexes.get(i);
         }
         for(int index = RIndex; index < AFDs.size(); index ++){
-            for(AFD afd : AFDs.get(index)){
+            for(RFD afd : AFDs.get(index)){
                 if(afd.getTotalLIndexes() > total)continue;
                 if(canCover(LIndexes, afd.thresholdsIndexes))return true;
             }
@@ -76,22 +72,22 @@ public class AFDSet {
         return false;
     }
 
-    public List<AFD> minimize(){
+    public List<RFD> minimize(){
         for(var AFDsByIndex : AFDs){
             AFDsByIndex.sort(Comparator
-                    .comparingInt(AFD::getTotalLIndexes));
+                    .comparingInt(RFD::getTotalLIndexes));
         }
-        List<AFD> results = new ArrayList<>();
+        List<RFD> results = new ArrayList<>();
 
-        ListIterator<List<AFD>> listIterator = AFDs.listIterator(AFDs.size());
+        ListIterator<List<RFD>> listIterator = AFDs.listIterator(AFDs.size());
 
         while (listIterator.hasPrevious()) {
-            List<AFD> afds = listIterator.previous();
-            // Now, 'afds' contains a list of AFD objects in reverse order
-            List<AFD> removeSet = new ArrayList<>();
-            for (AFD afd : afds) {
+            List<RFD> afds = listIterator.previous();
+            // Now, 'afds' contains a list of RFD objects in reverse order
+            List<RFD> removeSet = new ArrayList<>();
+            for (RFD afd : afds) {
                 boolean flag = true;
-                for (AFD result : results) {
+                for (RFD result : results) {
                     if (Objects.equals(afd.thresholdsIndexes.get(columnIndex), result.thresholdsIndexes.get(columnIndex))) {
                         if (canCover(afd.thresholdsIndexes, result.thresholdsIndexes)) {
                             flag = false;
@@ -153,11 +149,11 @@ public class AFDSet {
         return minimalAFDs.size();
     }
 
-    public List<AFD> getMinimalAFDs() {
+    public List<RFD> getMinimalAFDs() {
         return minimalAFDs;
     }
 
-    public List<List<AFD>> getAFDs() {
+    public List<List<RFD>> getAFDs() {
         return AFDs;
     }
 

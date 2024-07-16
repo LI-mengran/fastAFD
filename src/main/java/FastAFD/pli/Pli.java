@@ -8,6 +8,7 @@ public class Pli<T> {
     public List<T> keys;
     boolean isNum;
     List<Cluster> clusters;
+    public PliShard pliShard;
     Map<T, Integer> keyToClusterIdMap;
     public Pli(Boolean isNum, List<Cluster> rawClusters, List<T> keys, Map<T, Integer> translator){
         this.clusters = rawClusters;
@@ -98,6 +99,10 @@ public class Pli<T> {
 //        sb.append(keyToClusterIdMap + "\n");
 
         return sb.toString();
+    }
+
+    public void setPlishard(PliShard pli){
+        this.pliShard = pli;
     }
 
 }

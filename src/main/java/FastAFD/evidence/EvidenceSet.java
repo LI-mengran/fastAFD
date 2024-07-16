@@ -5,6 +5,7 @@ import java.util.*;
 public class EvidenceSet {
     List<Evidence> evidenceSet = new ArrayList<>();
     HashMap<BitSet, Long> evidenceNumber = new HashMap<>();
+    HashMap<BitSet, Evidence> bitSetToEvi = new HashMap<>();
     public EvidenceSet (){
 
     }
@@ -30,8 +31,18 @@ public class EvidenceSet {
         evidenceNumber.put(target.bitSet, evidenceNumber.get(target.bitSet) + number);
     }
 
-    public void add(Evidence evidence){
-        evidenceSet.add(evidence);
+    public void add(Evidence evidence, boolean isReading){
+//        evidenceNumber.put();
+        if( !isReading && evidenceNumber.containsKey(evidence.bitSet)){
+            Evidence evi = bitSetToEvi.get(evidence.bitSet);
+            evi.count =  evi.count + evidence.count;
+            evidenceNumber.put(evidence.bitSet, evi.count);
+        }
+        else{
+            evidenceNumber.putIfAbsent(evidence.bitSet, evidence.count);
+            evidenceSet.add(evidence);
+            if(!isReading) bitSetToEvi.put(evidence.bitSet, evidence);
+        }
     }
 
     public void sort(){

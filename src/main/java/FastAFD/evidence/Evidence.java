@@ -26,6 +26,14 @@ public class Evidence {
         this.bitSet = Utils.listToBitSet(indexByColumn, maxPredicateIndex);
     }
 
+    public Evidence(List<Predicate> pres, List<Integer> predicateIndexes, long count,  int maxPredicateIndex){
+        this.evidence = pres;
+        this.indexByColumn = predicateIndexes;
+        this.columnNumber = predicateIndexes.size();
+        this.maxPredicateIndex = maxPredicateIndex;
+        this.bitSet = Utils.listToBitSet(indexByColumn, maxPredicateIndex);
+        this.count = count;
+    }
     public Evidence(List<Integer> predicateIndexes, long count){
         this.indexByColumn = predicateIndexes;
         this.columnNumber = predicateIndexes.size();

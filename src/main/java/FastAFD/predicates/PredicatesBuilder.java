@@ -1,18 +1,16 @@
 package FastAFD.predicates;
 
 import FastAFD.AEI.TopKSet;
-import FastAFD.AFD.AFD;
-import FastAFD.AFD.AFDSet;
+import FastAFD.AFD.RFD;
+import FastAFD.AFD.RFDSet;
+import FastAFD.TANE.Candidate;
 import FastAFD.input.ColumnStats;
 import FastAFD.input.ParsedColumn;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class PredicatesBuilder {
     int columnNumber;
@@ -39,7 +37,7 @@ public class PredicatesBuilder {
         this.columnStats = columnStats;
         columnNumber = columnStats.size();
         if(!Objects.equals(columnTresholdsFile, "")){
-            buildPredicatesWithFile();
+            buildPredicatesWithFile(columnStats);
             return;
         }
         for(int columnIndex = 0; columnIndex < columnNumber; columnIndex++){
@@ -53,6 +51,7 @@ public class PredicatesBuilder {
                 buildStringColumn(columnstat);
 //                buildStringColumnTest(columnstat);
         }
+        System.out.println("[Predicates Number]: " + getPredicatesCount());
     }
 
     private void buildNumberColumn(ColumnStats columnStat){
@@ -138,7 +137,9 @@ public class PredicatesBuilder {
         allColumnDemarcations.add(demarcation);
     }
 
-    public void buildPredicatesWithFile(){
+    public void buildPredicatesWithFile(List<ColumnStats> columnStats){
+        this.columnStats = columnStats;
+        columnNumber = columnStats.size();
         if(columnTresholdsFile != null) {
             List<List<Double>> tempArray = new ArrayList<>();
 
@@ -162,7 +163,7 @@ public class PredicatesBuilder {
                 }
 
                 br.close();
-                for(int columnIndex = 0; columnIndex < tempArray.size(); columnIndex++) {
+                for(int columnIndex = 0; columnIndex < columnNumber; columnIndex++) {
                     List<Double> dem = tempArray.get(columnIndex);
                     List<Predicate> columnPredicate = new ArrayList<>();
                     List<Double> demarcation = new ArrayList<>();
@@ -217,6 +218,14 @@ public class PredicatesBuilder {
         return maxIndex;
     }
 
+    public int getPredicatesCount(){
+        int count = 0;
+        for(var predicates : allColumnPredicates){
+            count += predicates.size();
+        }
+        return count;
+    }
+
     public List<Integer> getMaxPredicateIndexByColumn(){
         List<Integer> indexesNumbers = new ArrayList<>();
         for(int i = 0; i < columnNumber; i++){
@@ -229,8 +238,8 @@ public class PredicatesBuilder {
         return columnNumber;
     }
 
-    public void printAFD(AFDSet afdSet,  List<ParsedColumn<?>> pColumns){
-            for(AFD afd : afdSet.getMinimalAFDs()){
+    public void printRFD(RFDSet afdSet, List<ParsedColumn<?>> pColumns){
+            for(RFD afd : afdSet.getMinimalAFDs()){
                 List<Integer> pIndexes = afd.getThresholdsIndexes();
                 boolean flag = false;
                 for(int index = 0; index < pIndexes.size(); index++ ){
@@ -248,10 +257,32 @@ public class PredicatesBuilder {
             }
     }
 
+    public void printRFD(List<List<Candidate>> afdSet, List<ParsedColumn<?>> pColumns){
+        for(List<Candidate> rfds : afdSet){
+            for(Candidate rfd : rfds){
+                List<Integer> pIndexes = rfd.getLhsIndex();
+                boolean flag = false;
+                for(int index = 0; index < pIndexes.size(); index++ ){
+                    if(index == rfd.getColumnIndex())continue;
+                    if(pIndexes.get(index) == 0)continue;
+                    if(flag)System.out.print(", ");
+                    flag = true;
+                    System.out.print( '[' + pColumns.get(index).getColumnName() + "(<= " +
+                            allColumnPredicates.get(index).get(pIndexes.get(index)).getHigherBound() +")]");
+                }
+                System.out.print(" --> ");
+                System.out.print('[' + pColumns.get(rfd.getColumnIndex()).getColumnName() + "(<=" +
+                        allColumnPredicates.get(rfd.getColumnIndex()).get(pIndexes.get(rfd.getColumnIndex())).getHigherBound() +")]");
+                System.out.print('\n');
+            }
+        }
+    }
+
     public void printTopK(List<TopKSet> topKSets, List<ParsedColumn<?>> pColumns){
+
         for(TopKSet topKSet : topKSets){
             for(double utility : topKSet.getTopKSet()){
-                for(AFD afd : topKSet.getUtility2AFD(utility)){
+                for(RFD afd : topKSet.getUtility2AFD(utility)){
                     List<Integer> pIndexes = afd.getThresholdsIndexes();
                     boolean flag = false;
                     for(int index = 0; index < pIndexes.size(); index++ ){
@@ -272,4 +303,45 @@ public class PredicatesBuilder {
         }
 
     }
+    public void printTopKTotal(List<TopKSet> topKSets, List<ParsedColumn<?>> pColumns, int k){
+        List<Double> utilities = new ArrayList<>();
+        for(TopKSet topKSet : topKSets) {
+            utilities.addAll(topKSet.getTopKSet());
+        }
+        utilities.sort((o1, o2) ->  Double.compare(o2,o1));
+        utilities = utilities.subList(0,Math.min(utilities.size(),k + 5));
+        HashMap<Double, List<RFD>> map = new HashMap<>();
+
+        for(TopKSet topKSet : topKSets) {
+            for(double utility : topKSet.getTopKSet()) {
+                if (utilities.contains(utility)){
+
+                    map.putIfAbsent(utility, new ArrayList<>());
+                    map.get(utility).addAll(topKSet.getUtility2AFD(utility));
+                }
+            }
+        }
+
+            for(double utility : utilities){
+                for(RFD afd :map.get(utility)){
+                    List<Integer> pIndexes = afd.getThresholdsIndexes();
+                    boolean flag = false;
+                    for(int index = 0; index < pIndexes.size(); index++ ){
+                        if(index == afd.getColumnIndex())continue;
+                        if(pIndexes.get(index) == 0)continue;
+                        if(flag)System.out.print(", ");
+                        flag = true;
+                        System.out.print( '[' + pColumns.get(index).getColumnName() + "(<=" +
+                                allColumnPredicates.get(index).get(pIndexes.get(index)).getHigherBound() +")]");
+                    }
+                    System.out.print(" --> ");
+                    System.out.print('[' + pColumns.get(afd.getColumnIndex()).getColumnName() + "(<=" +
+                            allColumnPredicates.get(afd.getColumnIndex()).get(pIndexes.get(afd.getColumnIndex()) + 1).getHigherBound() +")]");
+                    System.out.print("  utility: " + utility);
+                    System.out.print('\n');
+                }
+        }
+
+    }
+
 }

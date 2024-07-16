@@ -1,7 +1,7 @@
 package FastAFD.AEI;
 
-import FastAFD.AFD.AFD;
-import FastAFD.AFD.AFDSet;
+import FastAFD.AFD.RFD;
+import FastAFD.AFD.RFDSet;
 import FastAFD.evidence.Evidence;
 import FastAFD.evidence.EvidenceSet;
 import FastAFD.predicates.PredicatesBuilder;
@@ -16,7 +16,7 @@ public class RelaxedEvidenceInversion {
     private final int columnNumber;
     private final int evidenceNumber;
     private int rowNumber;
-    private int topKk = 1000;
+    private int topKk = 10;
     private List<Integer> maxIndexes;
     private EvidenceSet evidenceSet;
     private Evidence [] evidencesArray;
@@ -27,11 +27,12 @@ public class RelaxedEvidenceInversion {
     long tpCounts;
 
     private List<Long> intevalIds;
-    List<AFDSet> AFDSets = new ArrayList<>();
+    List<RFDSet> AFDSets = new ArrayList<>();
     List<TopKSet> topKSets = new ArrayList<>();
     long miniTime;
     long hitTime;
     long walkTime;
+    long addTime;
     boolean isSeperate = false;
     int seperateId;
     long intevalId;
@@ -44,7 +45,7 @@ public class RelaxedEvidenceInversion {
         this.maxIndexes = pBuilder.getMaxPredicateIndexByColumn();
         this.nog1Error = nog1Error;
         for(int i = 0; i < columnNumber; i++){
-            AFDSets.add(new AFDSet(i, maxIndexes.get(i)));
+            AFDSets.add(new RFDSet(i, maxIndexes.get(i)));
         }
     }
 
@@ -65,7 +66,7 @@ public class RelaxedEvidenceInversion {
         }
     }
 
-    public AFDSet buildRFD(double threshold){
+    public RFDSet buildRFD(double threshold){
 //        if(threshold == 0)return null;
         for(int columnIndex = 0; columnIndex < columnNumber; columnIndex++){
             List<List<Evidence>> sortedEvidences = generateSortedEvidences(columnIndex);
@@ -91,7 +92,7 @@ public class RelaxedEvidenceInversion {
             miniTime += duration.toMillis();
 
         }
-        AFDSet minimal = new AFDSet();
+        RFDSet minimal = new RFDSet();
         int totalCount = 0;
 
         for(var AFDs : AFDSets){
@@ -116,13 +117,14 @@ public class RelaxedEvidenceInversion {
 //            }
 //        }
 
-        System.out.println(totalCount);
+        System.out.println("[RFD number]: " + totalCount);
         System.out.println("miniteTime: " + miniTime);
         System.out.println("hitTime: " + hitTime);
         System.out.println("walkTime: " + walkTime);
+//        System.out.println("addTime: " + addTime);
         return minimal;
     }
-    public AFDSet buildRFDSep(double threshold){
+    public RFDSet buildRFDSep(double threshold){
 //        if(threshold == 0)return null;
         for(int columnIndex = 0; columnIndex < columnNumber; columnIndex++){
             List<List<Evidence>> sortedEvidences = generateSortedEvidences(columnIndex);
@@ -152,7 +154,7 @@ public class RelaxedEvidenceInversion {
             miniTime += duration.toMillis();
 
         }
-        AFDSet minimal = new AFDSet();
+        RFDSet minimal = new RFDSet();
         int totalCount = 0;
 
         for(var AFDs : AFDSets){
@@ -177,24 +179,23 @@ public class RelaxedEvidenceInversion {
 //            }
 //        }
 
-        System.out.println(totalCount);
+        System.out.println("[RFD number]: " + totalCount);
         System.out.println("miniteTime: " + miniTime);
         System.out.println("hitTime: " + hitTime);
         System.out.println("walkTime: " + walkTime);
         return minimal;
     }
-    public List<TopKSet> buildTopK(double threshold){
+    public List<TopKSet> buildTopK(double threshold, int _k){
+        topKk = _k;
 //        if(threshold == 0)return null;
         for(int columnIndex = 0; columnIndex < columnNumber; columnIndex++){
             List<List<Evidence>> sortedEvidences = generateSortedEvidences(columnIndex);
-            List<Long> targets = generateTargets(sortedEvidences, threshold);
-            evidencesArray = flattenAndConvert(sortedEvidences);
             intevalIds = new ArrayList<>();
             for(int i = 0; i < maxIndexes.get(columnIndex) - 1; i++){
                 intevalIds.add(0L);
             }
             for(var splitEvidences : sortedEvidences){
-                splitEvidences.sort((o1, o2) -> Long.compare(o1.getCount(), o2.getCount()));
+                splitEvidences.sort((o2, o1) -> Long.compare(o1.getCount(), o2.getCount()));
                 if(splitEvidences.isEmpty())continue;
                 intevalIds.set(splitEvidences.get(0).getPredicateIndex(columnIndex), (long) splitEvidences.size());
             }
@@ -202,16 +203,37 @@ public class RelaxedEvidenceInversion {
                 intevalIds.set(i, intevalIds.get(i - 1) + intevalIds.get(i));
             }
 
+            List<Long> targets = generateTargets(sortedEvidences, threshold);
+            evidencesArray = flattenAndConvert(sortedEvidences);
             inverseEvidenceSet(targets,columnIndex);
             buildPrefixEviSet();
             Instant start = Instant.now();
 //            AFDSets.get(columnIndex).minimize();
             TopKSet topKSet = new TopKSet(topKk, columnIndex);
 
-            for(var afd : AFDSets.get(columnIndex).getMinimalAFDs()){
-                    topKSet.insert(afd,getUtility2(afd.getThresholdsIndexes(),afd.getRIndex(),columnIndex));
+            TreeMap<Double, List<RFD>> uMap = new TreeMap<>();
+            for(var afds : AFDSets.get(columnIndex).getAFDs()){
+                for(var afd : afds){
+                    double utility = getUtility2(afd.getThresholdsIndexes(), afd.getRIndex(), columnIndex);
+                    uMap.computeIfAbsent(utility, k -> new ArrayList<>()).add(afd);
+//                    topKSet.insert(afd,getUtility2(afd.getThresholdsIndexes(),afd.getRIndex(),columnIndex));
+                }
             }
-                topKSets.add(topKSet);
+
+            // 从TreeMap的最后一个键开始遍历，直到找到前k大的AFD
+            for (Map.Entry<Double, List<RFD>> entry : uMap.descendingMap().entrySet()) {
+                for (RFD afd : entry.getValue()) {
+                    if (topKSet.curK < topKk) {
+                        topKSet.add(afd, entry.getKey());
+                    } else {
+                        break;
+                    }
+                }
+                if (topKSet.curK >= topKk) {
+                    break;
+                }
+            }
+            topKSets.add(topKSet);
 
             Duration duration = Duration.between(start, Instant.now());
             miniTime += duration.toMillis();
@@ -219,17 +241,17 @@ public class RelaxedEvidenceInversion {
             //printout
 //            System.out.println("column " + columnIndex + " completed.");
         }
-        AFDSet minimal = new AFDSet();
+        RFDSet minimal = new RFDSet();
         int totalCount = 0;
 
             for(var afds : topKSets){
-                for(AFD afd : afds.getAFDs()){
+                for(RFD afd : afds.getAFDs()){
                     minimal.directlyAdd(afd);
                     totalCount ++;
                 }
             }
 
-        System.out.println(totalCount);
+        System.out.println("[RFD number]: " + totalCount);
         System.out.println("miniteTime: " + miniTime);
         System.out.println("hitTime: " + hitTime);
         System.out.println("walkTime: " + walkTime);
@@ -278,7 +300,7 @@ public class RelaxedEvidenceInversion {
                 if(!isSeperate)
                     left.set(columnIndex, RIndex);
                 else left.set(columnIndex, seperateId);
-                AFD afd = new AFD(left, columnIndex);
+                RFD afd = new RFD(left, columnIndex);
                 AFDSets.get(columnIndex).add(afd);
                 targets.set(RIndex,  (long) rowNumber * rowNumber / 2);
 
@@ -294,6 +316,7 @@ public class RelaxedEvidenceInversion {
         }
         walk(0,nodes,candidates,limitThreshold,targets,columnIndex);
 
+//        int count = 0;
         while(!nodes.isEmpty()){
             SearchNode nd = nodes.pop();
             Instant start = Instant.now();
@@ -301,11 +324,14 @@ public class RelaxedEvidenceInversion {
             Duration duration = Duration.between(start, Instant.now());
             hitTime += duration.toMillis();
             start = Instant.now();
-            if(! isNoUse(nd))
+            if(! isNoUse(nd)){
+//                count++;
                 walk(nd.e + 1, nodes,nd.candidates,nd.limitThresholds,nd.remainCounts,columnIndex);
+            }
             duration = Duration.between(start, Instant.now());
             walkTime += duration.toMillis();
         }
+//        System.out.println("walkCounts: "+ count);
     }
     public void inverseEvidenceSetSep(Long targets, int columnIndex){
         Stack<SearchNode> nodes = new Stack<>();
@@ -314,7 +340,7 @@ public class RelaxedEvidenceInversion {
         if(targets <= 0){
             List<Integer> left = new ArrayList<>(candidate.leftThresholdsIndexes);
             left.set(columnIndex, seperateId);
-            AFD afd = new AFD(left, columnIndex);
+            RFD afd = new RFD(left, columnIndex);
             AFDSets.get(columnIndex).add(afd);
             return;
         }
@@ -343,7 +369,6 @@ public class RelaxedEvidenceInversion {
     void walk(int e, Stack<SearchNode> nodes,List<AFDCandidate> AFDCandidates, List<Integer> limitThresholds, List<Long> targets, int columnIndex){
 //        System.out.println(seperateId);
         while (e < evidencesArray.length && !AFDCandidates.isEmpty()) {
-            if(isSeperate && e >= intevalIds.get(0))return;
             Evidence evi = evidencesArray[e];
             if(intevalIds.contains((long) e) && e > 0){
                 int lastRstage = evidencesArray[e - 1].getPredicateIndex(columnIndex);
@@ -394,13 +419,14 @@ public class RelaxedEvidenceInversion {
 ////                        }
 //                    }
                     int maxFitIndex =  maxSatisfied(e + 1, cand.leftThresholdsIndexes, lowR, targets, columnIndex);
-                    if(maxFitIndex != -1 && !AFDSets.get(columnIndex).containsSubset(cand.leftThresholdsIndexes,isSeperate ? seperateId : maxFitIndex)){
+//                    Instant start = Instant.now();
+                    if(maxFitIndex != -1 && !AFDSets.get(columnIndex).containsSubset(cand.leftThresholdsIndexes,maxFitIndex)){
                         List<Integer> left = new ArrayList<>(cand.leftThresholdsIndexes);
-                        if(!isSeperate)
-                            left.set(columnIndex, maxFitIndex);
-                        else left.set(columnIndex, seperateId);
-                        AFD afd = new AFD(left, columnIndex);
+                        left.set(columnIndex, maxFitIndex);
+                        RFD afd = new RFD(left, columnIndex);
                         AFDSets.get(columnIndex).add(afd);
+//                        Duration duration = Duration.between(start, Instant.now());
+//                        addTime += duration.toMillis();
                     }
                 }
                 else
@@ -447,8 +473,11 @@ public class RelaxedEvidenceInversion {
                     if(isApproxCover(e + 1, cand.leftThresholdsIndexes,seperateId,targets,columnIndex) && !AFDSets.get(columnIndex).containsSubset(cand.leftThresholdsIndexes, seperateId )){
                         List<Integer> left = new ArrayList<>(cand.leftThresholdsIndexes);
                         left.set(columnIndex, seperateId);
-                        AFD afd = new AFD(left, columnIndex);
+                        RFD afd = new RFD(left, columnIndex);
+//                        Instant start = Instant.now();
                         AFDSets.get(columnIndex).add(afd);
+//                        Duration duration = Duration.between(start, Instant.now());
+//                        addTime += duration.toMillis();
                     }
                 }
                 else
@@ -463,12 +492,11 @@ public class RelaxedEvidenceInversion {
     }
     void hit(SearchNode nd){
         if(nd.e >= evidencesArray.length)return;
-        if(isSeperate && nd.e >= intevalIds.get(0))return;
         if(nd.candidates.isEmpty() && nd.unhitCand.isEmpty()) return;
 
         List<AFDCandidate> candidates = nd.candidates;
         Evidence evi = evidencesArray[nd.e];
-        int RStage = isSeperate ? 0 : evi.getPredicateIndex(nd.columnIndex);
+        int RStage = evi.getPredicateIndex(nd.columnIndex);
 
         List<Integer> canCover = new ArrayList<>();
         List<Integer> unCover = new ArrayList<>();
@@ -486,13 +514,14 @@ public class RelaxedEvidenceInversion {
                 nd.remainCounts.set(rightThresholdIndex, (long) rowNumber * rowNumber / 2);
             }
             for(var cand : candidates){
-                if(AFDSets.get(nd.columnIndex).containsSubset(cand.leftThresholdsIndexes, isSeperate ? seperateId: maxCanCover))continue;
+                if(AFDSets.get(nd.columnIndex).containsSubset(cand.leftThresholdsIndexes, maxCanCover))continue;
                 List<Integer> afdCand = new ArrayList<>(cand.leftThresholdsIndexes);
-                if(!isSeperate)
-                    afdCand.set(nd.columnIndex, maxCanCover);
-                else  afdCand.set(nd.columnIndex, seperateId);
-                AFD afd = new AFD(afdCand, nd.columnIndex);
+                afdCand.set(nd.columnIndex, maxCanCover);
+                RFD afd = new RFD(afdCand, nd.columnIndex);
+//                Instant start = Instant.now();
                 AFDSets.get(nd.columnIndex).add(afd);
+//                Duration duration = Duration.between(start, Instant.now());
+//                addTime += duration.toMillis();
             }
         }
 
@@ -506,13 +535,11 @@ public class RelaxedEvidenceInversion {
                 if(left.get(i) < limit.get(i) - 1){
                     if(!canCover.isEmpty()){
                         List<Integer> afdCand = new ArrayList<>(invalid.leftThresholdsIndexes);
-                        if(!isSeperate)
-                            afdCand.set(nd.columnIndex, maxCanCover);
-                        else  afdCand.set(nd.columnIndex, seperateId);
+                        afdCand.set(nd.columnIndex, maxCanCover);
 //                        System.out.println(seperateId);
                         afdCand.set(i, left.get(i) + 1);
-                        if(!listContainsSubset(afdCand, newResult, nd.columnIndex) && !AFDSets.get(nd.columnIndex).containsSubset(afdCand,isSeperate ? seperateId: maxCanCover)){// &&
-//                            AFD afd = new AFD(afdCand,nd.columnIndex);
+                        if(!listContainsSubset(afdCand, newResult, nd.columnIndex) && !AFDSets.get(nd.columnIndex).containsSubset(afdCand, maxCanCover)){// &&
+//                            RFD afd = new RFD(afdCand,nd.columnIndex);
                             checkMin(afdCand, newResult, nd.columnIndex);
                             newResult.add(new AFDCandidate(afdCand, nd.columnIndex));
 //                            AFDSets.get(nd.columnIndex).add(afd);
@@ -524,8 +551,11 @@ public class RelaxedEvidenceInversion {
 
         if(unCover.isEmpty()){
             for(var afdcand : newResult){
-                AFD afd = new AFD(afdcand.leftThresholdsIndexes,nd.columnIndex);
+                RFD afd = new RFD(afdcand.leftThresholdsIndexes,nd.columnIndex);
+//                Instant start = Instant.now();
                 AFDSets.get(nd.columnIndex).add(afd);
+//                Duration duration = Duration.between(start, Instant.now());
+//                addTime += duration.toMillis();
             }
             return;
         }
@@ -547,7 +577,7 @@ public class RelaxedEvidenceInversion {
 ////                                }
 ////                            }
 //                        }
-                        if (!listContainsSubset(afdCand, candidates, nd.columnIndex) ) {
+                        if (!listContainsSubset(afdCand, candidates, nd.columnIndex) && !AFDSets.get(nd.columnIndex).containsSubset(afdCand, unCover.get(unCover.size() - 1))) {
 //                            if (!runOutSearchSpace(afdCand, nd.limitThresholds, nd.columnIndex)) {
                                 checkMin(afdCand, candidates, nd.columnIndex);
                                 candidates.add(new AFDCandidate(afdCand, nd.columnIndex));
@@ -560,10 +590,8 @@ public class RelaxedEvidenceInversion {
             if (runOutSearchSpace(afdCand.leftThresholdsIndexes, nd.limitThresholds, nd.columnIndex)) {
                 List<Integer> cand = afdCand.leftThresholdsIndexes;
                 int maxFitIndex = maxSatisfied(nd.e + 1, cand, unCover.get(0), nd.remainCounts, nd.columnIndex);
-                if (maxFitIndex != -1 && !listContainsSubset(cand, newResult, nd.columnIndex) && !AFDSets.get(nd.columnIndex).containsSubset(cand, isSeperate ? seperateId: maxFitIndex)) {
-                    if(!isSeperate)
-                        cand.set(nd.columnIndex, maxFitIndex);
-                    else cand.set(nd.columnIndex, seperateId);
+                if (maxFitIndex != -1 && !listContainsSubset(cand, newResult, nd.columnIndex) && !AFDSets.get(nd.columnIndex).containsSubset(cand,maxFitIndex)) {//
+                    cand.set(nd.columnIndex, maxFitIndex);
                     checkMin(cand, newResult, nd.columnIndex);
                     newResult.add(new AFDCandidate(cand, nd.columnIndex));
                 }
@@ -573,8 +601,11 @@ public class RelaxedEvidenceInversion {
         }
 
         for(var afdcand : newResult){
-            AFD afd = new AFD(afdcand.leftThresholdsIndexes,nd.columnIndex);
+            RFD afd = new RFD(afdcand.leftThresholdsIndexes,nd.columnIndex);
+            Instant start = Instant.now();
             AFDSets.get(nd.columnIndex).add(afd);
+            Duration duration = Duration.between(start, Instant.now());
+            addTime += duration.toMillis();
         }
     }
     void hitSep(SearchNode nd){
@@ -590,7 +621,7 @@ public class RelaxedEvidenceInversion {
 //                if(AFDSets.get(nd.columnIndex).containsSubset(cand.leftThresholdsIndexes, seperateId))continue;
                 List<Integer> afdCand = new ArrayList<>(cand.leftThresholdsIndexes);
                 afdCand.set(nd.columnIndex, seperateId);
-                AFD afd = new AFD(afdCand, nd.columnIndex);
+                RFD afd = new RFD(afdCand, nd.columnIndex);
                 AFDSets.get(nd.columnIndex).add(afd);
             }
             for(AFDCandidate invalid : nd.unhitCand) {
@@ -603,7 +634,7 @@ public class RelaxedEvidenceInversion {
                         afdCand.set(nd.columnIndex, seperateId);
                         afdCand.set(i, left.get(i) + 1);
                         if( !AFDSets.get(nd.columnIndex).containsSubset(afdCand,seperateId)){// &&
-                        AFD afd = new AFD(afdCand,nd.columnIndex);
+                        RFD afd = new RFD(afdCand,nd.columnIndex);
                         AFDSets.get(nd.columnIndex).add(afd);
                         }
                     }
@@ -620,7 +651,7 @@ public class RelaxedEvidenceInversion {
                 if (left.get(i) < limit.get(i) - 1) {
                     List<Integer> afdCand = new ArrayList<>(invalid.leftThresholdsIndexes);
                     afdCand.set(i, left.get(i) + 1);
-                    if (!listContainsSubset(afdCand, candidates, nd.columnIndex) ) {
+                    if (!listContainsSubset(afdCand, candidates, nd.columnIndex) && !AFDSets.get(nd.columnIndex).containsSubset(afdCand,seperateId) ) {
                         checkMin(afdCand, candidates, nd.columnIndex);
                         candidates.add(new AFDCandidate(afdCand, nd.columnIndex));
                     }
@@ -632,7 +663,7 @@ public class RelaxedEvidenceInversion {
                 List<Integer> cand = afdCand.leftThresholdsIndexes;
                 if (isApproxCover(nd.e + 1, cand,seperateId,nd.remainCounts.get(0), nd.columnIndex) ) {
                     cand.set(nd.columnIndex, seperateId);
-                    AFD afd = new AFD(cand,nd.columnIndex);
+                    RFD afd = new RFD(cand,nd.columnIndex);
                     AFDSets.get(nd.columnIndex).add(afd);
                 }
                 candidates.remove(afdCand);
@@ -798,6 +829,7 @@ public class RelaxedEvidenceInversion {
 
     boolean isNoUse(SearchNode nd){
         if(nd.e >= evidencesArray.length)return true;
+        if(nd.candidates.isEmpty())return true;
         for(int i = evidencesArray[nd.e].getPredicateIndex(nd.columnIndex); i < nd.remainCounts.size(); i++){
             if(nd.remainCounts.get(i) != (long) rowNumber * rowNumber / 2)return false;
         }

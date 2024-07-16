@@ -108,7 +108,7 @@ public class Input {
 
     public int getDigit(String s){
         if(!s.contains(".")) {
-            System.out.println("Integer with type Double");
+//            System.out.println("Integer with type Double");
             return 0;
         }
         return s.split("\\.")[1].length();
