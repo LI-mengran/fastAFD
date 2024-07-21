@@ -1,4 +1,4 @@
-## FastFD-Exp
+## FastRFD-Exp
 
 ### Datasets
 
