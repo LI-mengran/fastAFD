@@ -2,7 +2,7 @@
 
 ### Datasets
 
-Provided in datasets.zip, and the corresponding similarity threshold are provided in threshold.zip.
+Provided in `datasets.zip`, and the corresponding similarity threshold are provided in `threshold.zip`.
 
 ### Exp-1 : FastRFD against baseline methods
 
