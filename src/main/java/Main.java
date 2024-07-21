@@ -2,12 +2,11 @@
 import FastAFD.AEI.REIwithTopK;
 import FastAFD.AEI.RelaxedEvidenceInversion;
 import FastAFD.AEI.TopKSet;
-import FastAFD.AFD.RFDSet;
+import FastAFD.RFD.RFDSet;
 import FastAFD.TANE.LatticeTraverse;
 import FastAFD.Utils;
 import FastAFD.evidence.EvidenceSetBuilder;
 import FastAFD.input.ColumnStats;
-import FastAFD.passjoin.SubstringableString;
 import FastAFD.pli.PliBuilder;
 import FastAFD.input.RelationalInput;
 import FastAFD.input.Input;
@@ -24,8 +23,6 @@ import java.util.Objects;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-
-import static FastAFD.Utils.calculateEditDistanceWithThreshold;
 
 @Command(name = "FastAFD", version = "1.0", mixinStandardHelpOptions = true)
 public class Main implements Runnable{
