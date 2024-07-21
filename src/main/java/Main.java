@@ -1,17 +1,20 @@
-//import FastAFD.AEI.REIwithTopK;
-import FastAFD.AEI.REIwithTopK;
-import FastAFD.AEI.RelaxedEvidenceInversion;
-import FastAFD.AEI.TopKSet;
-import FastAFD.AFD.RFDSet;
-import FastAFD.TANE.LatticeTraverse;
-import FastAFD.Utils;
-import FastAFD.evidence.EvidenceSetBuilder;
-import FastAFD.input.ColumnStats;
-import FastAFD.passjoin.SubstringableString;
-import FastAFD.pli.PliBuilder;
-import FastAFD.input.RelationalInput;
-import FastAFD.input.Input;
-import FastAFD.predicates.PredicatesBuilder;
+//import FastRFD.AEI.REIwithTopK;
+
+import FastRFD.AEI.REIwithTopK;
+import FastRFD.AEI.RelaxedEvidenceInversion;
+import FastRFD.AEI.TopKSet;
+import FastRFD.RFD.RFDSet;
+import FastRFD.TANE.LatticeTraverse;
+import FastRFD.Utils;
+import FastRFD.evidence.EvidenceSetBuilder;
+import FastRFD.input.ColumnStats;
+import FastRFD.input.Input;
+import FastRFD.input.RelationalInput;
+import FastRFD.pli.PliBuilder;
+import FastRFD.predicates.PredicatesBuilder;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -21,13 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-
-import static FastAFD.Utils.calculateEditDistanceWithThreshold;
-
-@Command(name = "FastAFD", version = "1.0", mixinStandardHelpOptions = true)
+@Command(name = "FastRFD", version = "1.0", mixinStandardHelpOptions = true)
 public class Main implements Runnable{
 
     @Option(names = {"-f"}, description = "input file")
@@ -72,7 +69,7 @@ public class Main implements Runnable{
             case 4 -> System.out.println("[mode] : RFDD-");
             case 5 -> System.out.println("[mode] : topK--" + topK + " for each attribute");
             case 6 -> System.out.println("[mode] : Topk");
-            case 7 -> System.out.println("[mode]: cache with lattice");
+            case 7 -> System.out.println("[mode]: colRFD");
             case 8 -> System.out.println("[mode]: rowRFD ");
         }
         System.out.println("[File name] : " + fp);
