@@ -1,4 +1,4 @@
-package FastAFD.AFD;
+package FastRFD.RFD;
 
 import java.util.List;
 
