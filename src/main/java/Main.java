@@ -1,16 +1,20 @@
-//import FastAFD.AEI.REIwithTopK;
-import FastRFD.AEI.REIwithTopK;
-import FastRFD.AEI.RelaxedEvidenceInversion;
-import FastRFD.AEI.TopKSet;
+//import FastRFD.AEI.REIwithTopK;
+
+import FastRFD.REI.REIwithTopK;
+import FastRFD.REI.RelaxedEvidenceInversion;
+import FastRFD.REI.TopKSet;
 import FastRFD.RFD.RFDSet;
 import FastRFD.TANE.LatticeTraverse;
 import FastRFD.Utils;
 import FastRFD.evidence.EvidenceSetBuilder;
 import FastRFD.input.ColumnStats;
-import FastRFD.pli.PliBuilder;
-import FastRFD.input.RelationalInput;
 import FastRFD.input.Input;
+import FastRFD.input.RelationalInput;
+import FastRFD.pli.PliBuilder;
 import FastRFD.predicates.PredicatesBuilder;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -19,10 +23,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
 
 @Command(name = "FastRFD", version = "1.0", mixinStandardHelpOptions = true)
 public class Main implements Runnable{
