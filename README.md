@@ -2,7 +2,7 @@
 
 ### Introduction
 
-RFDs is the first algorithm to  discovering all valid and minimal RFDs with relaxing restrictions in value equality and constraint satisfaction simultaneously.
+FastRFD is the first algorithm for discovering all valid and minimal RFDs with relaxations  in value equality and constraint satisfaction simultaneously.
 
 ### Requirements
 
@@ -40,15 +40,14 @@ mode [8] | rowRFD
 
 When you want to run our code, you should choose options you need. Among these,  `[-f]、[-s]`  are necessary to input.
 
-For example, you can run this code to find RFDs in "iris.csv" with it's given similarity threshold file "threshold/iris.txt" and g1 error 0.1.
-
+For example, you can run this code to find RFDs in "iris.csv" with it's given similarity threshold file "threshold/iris.txt" and g1 error 0.1, by using our algorithm FastRFD.
 ```
 java -jar FastAFD.jar -f ./dataset/iris.csv -t 0.1 -s threshold/iris.txt
 ```
 
 ### Comparative Experiments
 
-FastRFD are compared to other three discovery methods, `Domino` , `Dime` and `pyro`. The source code of Domino can be found [here](https://dast-unisa.github.io/Domino-SW/). The source code of Domino can be found [here](https://dastlab.github.io/dime/). The source code of Domino can be found [here](https://github.com/HPI-Information-Systems/pyro). Other methods can be found in our codes.
+FastRFD are compared to other three discovery methods, `Domino` , `Dime` and `pyro`. The source code of Domino can be found [here](https://dast-unisa.github.io/Domino-SW/). The source code of `Dime` can be found [here](https://dastlab.github.io/dime/). The source code of `pyro` can be found [here](https://github.com/HPI-Information-Systems/pyro).
 
 ## License
 
