@@ -32,7 +32,7 @@ And there are modes you can choose:
 ```
 mode [1] | FastRFD
 mode [2] | DiffBuilder + ColEnum
-mode [4] | DIffBuilder + RFDD-
+mode [4] | DiffBuilder + RFDD-
 mode [6] | Topk
 mode [7] | ColRFD
 mode [8] | rowRFD
@@ -48,7 +48,7 @@ java -jar FastAFD.jar -f ./dataset/iris.csv -t 0.1 -s threshold/iris.txt
 
 ### Comparative Experiments
 
-FastRFD are compared to other two discovery methods, `Domino` and `Dime`. The source code of Domino can be found [here](https://dast-unisa.github.io/Domino-SW/). The source code of Domino can be found [here](https://dastlab.github.io/dime/). Other methods can be found in our codes.
+FastRFD are compared to other three discovery methods, `Domino` , `Dime` and `pyro`. The source code of Domino can be found [here](https://dast-unisa.github.io/Domino-SW/). The source code of Domino can be found [here](https://dastlab.github.io/dime/). The source code of Domino can be found [here](https://github.com/HPI-Information-Systems/pyro). Other methods can be found in our codes.
 
 ## License
 
