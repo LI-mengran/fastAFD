@@ -1,16 +1,16 @@
 //import FastAFD.AEI.REIwithTopK;
-import FastAFD.AEI.REIwithTopK;
-import FastAFD.AEI.RelaxedEvidenceInversion;
-import FastAFD.AEI.TopKSet;
-import FastAFD.RFD.RFDSet;
-import FastAFD.TANE.LatticeTraverse;
-import FastAFD.Utils;
-import FastAFD.evidence.EvidenceSetBuilder;
-import FastAFD.input.ColumnStats;
-import FastAFD.pli.PliBuilder;
-import FastAFD.input.RelationalInput;
-import FastAFD.input.Input;
-import FastAFD.predicates.PredicatesBuilder;
+import FastRFD.AEI.REIwithTopK;
+import FastRFD.AEI.RelaxedEvidenceInversion;
+import FastRFD.AEI.TopKSet;
+import FastRFD.RFD.RFDSet;
+import FastRFD.TANE.LatticeTraverse;
+import FastRFD.Utils;
+import FastRFD.evidence.EvidenceSetBuilder;
+import FastRFD.input.ColumnStats;
+import FastRFD.pli.PliBuilder;
+import FastRFD.input.RelationalInput;
+import FastRFD.input.Input;
+import FastRFD.predicates.PredicatesBuilder;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,7 +24,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "FastAFD", version = "1.0", mixinStandardHelpOptions = true)
+@Command(name = "FastRFD", version = "1.0", mixinStandardHelpOptions = true)
 public class Main implements Runnable{
 
     @Option(names = {"-f"}, description = "input file")
