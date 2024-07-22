@@ -220,7 +220,7 @@ public class RelaxedEvidenceInversion {
                 }
             }
 
-            // 从TreeMap的最后一个键开始遍历，直到找到前k大的AFD
+        
             for (Map.Entry<Double, List<RFD>> entry : uMap.descendingMap().entrySet()) {
                 for (RFD afd : entry.getValue()) {
                     if (topKSet.curK < topKk) {
@@ -410,14 +410,6 @@ public class RelaxedEvidenceInversion {
 
             for(AFDCandidate cand : unhitCand){
                 if(runOutSearchSpace(cand.leftThresholdsIndexes, limitThresholds, columnIndex)){
-//                    int maxFitIndex = -1;
-//                    for(int RIndex = lowR; RIndex < maxIndexes.get(columnIndex) - 1; RIndex ++){
-////                        if(!AFDSets.get(columnIndex).containsSubset(cand.leftThresholdsIndexes, RIndex) ){
-//                            if(isApproxCover(e + 1,cand.leftThresholdsIndexes,RIndex,targets.get(RIndex),columnIndex))
-//                                maxFitIndex = RIndex;
-//                            else break;
-////                        }
-//                    }
                     int maxFitIndex =  maxSatisfied(e + 1, cand.leftThresholdsIndexes, lowR, targets, columnIndex);
 //                    Instant start = Instant.now();
                     if(maxFitIndex != -1 && !AFDSets.get(columnIndex).containsSubset(cand.leftThresholdsIndexes,maxFitIndex)){
@@ -440,7 +432,6 @@ public class RelaxedEvidenceInversion {
         //
     }
     void walkSep(int e, Stack<SearchNode> nodes, List<AFDCandidate> AFDCandidates, List<Integer> limitThresholds, long targets, int columnIndex){
-//        System.out.println(seperateId);
         while (e < intevalId && !AFDCandidates.isEmpty()) {
             Evidence evi = evidencesArray[e];
             if(targets < 0)
@@ -454,8 +445,6 @@ public class RelaxedEvidenceInversion {
                 for(AFDCandidate afdCandidates : AFDCandidates){
                     copy.add(afdCandidates.copy());
                 }
-//                System.out.println("e:" + e + "AFDCAND   :" + copy.size() +"unhited:" );
-
                 List<Long> tar = new ArrayList<>();
                 tar.add(targets);
                 SearchNode node = new SearchNode(e, copy, tar, new ArrayList<>(unhitCand), new ArrayList<>(limitThresholds), columnIndex);
@@ -568,15 +557,6 @@ public class RelaxedEvidenceInversion {
                     if (left.get(i) < limit.get(i) - 1) {
                         List<Integer> afdCand = new ArrayList<>(invalid.leftThresholdsIndexes);
                         afdCand.set(i, left.get(i) + 1);
-//                        boolean needSearch = false;
-//                        if (!listCanCover(afdCand, candidates, nd.columnIndex)) {
-////                            for (int rightThresholdIndex : unCover) {
-////                                if (!AFDSets.get(nd.columnIndex).containsSubset(afdCand, rightThresholdIndex)) {
-//                                    needSearch = true;
-//                                    break;
-////                                }
-////                            }
-//                        }
                         if (!listContainsSubset(afdCand, candidates, nd.columnIndex) && !AFDSets.get(nd.columnIndex).containsSubset(afdCand, unCover.get(unCover.size() - 1))) {
 //                            if (!runOutSearchSpace(afdCand, nd.limitThresholds, nd.columnIndex)) {
                                 checkMin(afdCand, candidates, nd.columnIndex);
