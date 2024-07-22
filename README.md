@@ -47,7 +47,7 @@ java -jar FastAFD.jar -f ./dataset/iris.csv -t 0.1 -s threshold/iris.txt
 
 ### Comparative Experiments
 
-FastRFD are compared to other three discovery methods, `Domino` , `Dime` and `pyro`. The source code of Domino can be found [here](https://dast-unisa.github.io/Domino-SW/). The source code of `Dime` can be found [here](https://dastlab.github.io/dime/). The source code of `pyro` can be found [here](https://github.com/HPI-Information-Systems/pyro).
+FastRFD are compared to other three discovery methods, `Domino` , `Dime` and `pyro`. The source code of `Domino` can be found [here](https://dast-unisa.github.io/Domino-SW/). The source code of `Dime` can be found [here](https://dastlab.github.io/dime/). The source code of `pyro` can be found [here](https://github.com/HPI-Information-Systems/pyro).
 
 ## License
 
