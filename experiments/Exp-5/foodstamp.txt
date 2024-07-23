@@ -1,7 +1,7 @@
 [id(<=4.0)], [supplincome(<=0.0)] --> [participation(<=0.0)]  utility: 0.002358581016299137  √
 [id(<=4.0)], [tenancy(<=0.0)] --> [participation(<=0.0)]  utility: 0.0020325982742090123  √
 [id(<=3.0)], [participation(<=0.0)] --> [supplincome(<=0.0)]  utility: 0.0018064876957494408 √
-[income(<=10.0)] --> [participation(<=0.0)]  utility: 0.0017257909875359539 √
+[income(<=10.0)] --> [participation(<=0.0)]  utility: 0.0017257909875359539  √
 [income(<=10.0)] --> [supplincome(<=0.0)]  utility: 0.0017257909875359539 √
 [supplincome(<=0.0)], [income(<=20.0)] --> [participation(<=0.0)]  utility: 0.0016498881431767339 √
 [tenancy(<=0.0)], [income(<=20.0)] --> [participation(<=0.0)]  utility: 0.0015939597315436241 √
