@@ -56,7 +56,7 @@ The source code of Dime can be found [here](https://dastlab.github.io/dime/). Be
 
 ### Exp-6 : FastRFD against Domino and FastDD
 
-The source code of Domino can be found [here](https://dast-unisa.github.io/Domino-SW/), and The resource code of FastDD can be found [here](https://github.com/TristonK/FastDD) . After generating predicate sets from Domino, we use them in FastRFD, and set error threshold to 0. Here is an example:
+The source code of Domino can be found [here](https://dast-unisa.github.io/Domino-SW/), and The resource code of FastDD can be found [here](https://github.com/TristonK/FastDD) . After generating predicate sets from Domino, we use them in FastRFD and FastDD, and set error threshold to 0. Here is an example:
 
 ```
 java -jar FastAFD.jar -f ./dataset/iris.csv -t 0.0 -g -s threshold/iris.txt -m 1
