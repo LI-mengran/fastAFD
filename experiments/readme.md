@@ -42,6 +42,10 @@ We study the scalability in terms of `|𝑟|`, `|P|` and `|e|`.
 
   We conduct experiments on `RFDD`、`RFDD-` and `COlEnum` to find scalability in terms of `|e|`. The latter can be found in `mode[2]` and `mode[4]`.
 
+Using all the datasets, we test the scalability
+of our methods while varying `|P|` or varying `|𝑟|`, the `|P|` of all experiments can be found in "threshold.zip/scalap". We also test the time ratios of both steps.
+
+
 ### Exp-3 : Handling dirty data
 
 We compare different methods in their abilities of identifying FDs from dirty data. We first conduct FD discovery on `𝑟` to identify the set `Σ` of minimal and valid FDs as the ground truth, and then inject errors into `𝑟` to generate a dirty dataset `𝑟′`, using different settings for different methods to find RFDs. The dirty datasets and the results are put in the `"Exp-3"` directory.
